@@ -6,20 +6,10 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Provider } from "@/lib/types";
 import { Send, Loader2, HelpCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import { sendMessage, fetchModels, APIError } from "@/lib/api";
+import { ModelSelector } from "@/components/ModelSelector";
+import { MessageList } from "@/components/MessageList";
+import { MessageInput } from "@/components/MessageInput";
+import { fetchModels, APIError } from "@/lib/api";
 
 interface ChatProps {
   provider: Provider;
@@ -98,104 +88,19 @@ export const Chat = ({ provider }: ChatProps) => {
 
   return (
     <div className="flex flex-col h-full">
-      <div className="mb-6">
-        <div className="flex flex-col gap-3">
-          <div className="flex items-center gap-2">
-            <h3 className="text-base font-semibold text-neutral-900">Select Model</h3>
-            <TooltipProvider>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <HelpCircle className="w-4 h-4 text-muted-foreground/70 hover:text-muted-foreground cursor-help" />
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Pricing shown per 1,000 tokens</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-          </div>
-          
-          <Select
-            value={selectedModel}
-            onValueChange={setSelectedModel}
-          >
-            <SelectTrigger className="w-[300px] bg-white/95 backdrop-blur-sm border-neutral-200 hover:bg-white/98 transition-colors px-4 py-3 shadow-sm">
-              <SelectValue placeholder="Choose a model" />
-            </SelectTrigger>
-            <SelectContent 
-              className="max-h-[300px] w-[300px] bg-white/98 backdrop-blur-sm border-neutral-200 shadow-lg"
-            >
-              {availableModels.map((model) => (
-                <SelectItem 
-                  key={model.id} 
-                  value={model.id}
-                  className="py-4 px-4 hover:bg-neutral-50 focus:bg-neutral-50 cursor-pointer border-b border-neutral-100 last:border-b-0"
-                >
-                  <div className="flex flex-col gap-3 w-full">
-                    <span className="font-medium text-[0.925rem] leading-snug text-neutral-900">
-                      {model.name || model.id}
-                    </span>
-                    {model.pricing && (
-                      <div className="text-[0.875rem] text-neutral-600 space-y-2.5">
-                        <div className="flex items-center justify-between leading-relaxed">
-                          <span className="text-neutral-500">Prompt:</span>
-                          <span className="font-medium pl-4">${model.pricing.prompt}/1k tokens</span>
-                        </div>
-                        <div className="flex items-center justify-between leading-relaxed">
-                          <span className="text-neutral-500">Completion:</span>
-                          <span className="font-medium pl-4">${model.pricing.completion}/1k tokens</span>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
-        </div>
-      </div>
-
-      <ScrollArea className="flex-1 pr-4">
-        <div className="space-y-4">
-          {messages.map((message, index) => (
-            <div
-              key={index}
-              className={`flex ${
-                message.role === "user" ? "justify-end" : "justify-start"
-              }`}
-            >
-              <div
-                className={`max-w-[80%] p-3 rounded-lg ${
-                  message.role === "user"
-                    ? "bg-electric text-white"
-                    : "bg-background/80 backdrop-blur-sm"
-                }`}
-              >
-                {message.content}
-              </div>
-            </div>
-          ))}
-        </div>
-      </ScrollArea>
-
-      <div className="pt-4">
-        <div className="flex gap-2">
-          <Input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type your message..."
-            onKeyPress={(e) => e.key === "Enter" && handleSend()}
-            className="bg-background/80 backdrop-blur-sm"
-            disabled={isLoading}
-          />
-          <Button onClick={handleSend} disabled={isLoading || !selectedModel}>
-            {isLoading ? (
-              <Loader2 className="w-4 h-4 animate-spin" />
-            ) : (
-              <Send className="w-4 h-4" />
-            )}
-          </Button>
-        </div>
-      </div>
+      <ModelSelector
+        selectedModel={selectedModel}
+        availableModels={availableModels}
+        onModelSelect={setSelectedModel}
+      />
+      <MessageList messages={messages} />
+      <MessageInput
+        input={input}
+        setInput={setInput}
+        isLoading={isLoading}
+        selectedModel={selectedModel}
+        onSendMessage={handleSend}
+      />
     </div>
   );
 };
