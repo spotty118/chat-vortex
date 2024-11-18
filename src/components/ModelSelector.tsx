@@ -63,12 +63,17 @@ export const ModelSelector = ({
           </SelectContent>
         </Select>
 
-        {/* Pricing information moved outside */}
+        {/* Pricing information with labels */}
         {availableModels.find(m => m.id === selectedModel)?.pricing && (
-          <div className="text-[0.75rem] text-neutral-500 pt-2.5">
-            <span>P: ${availableModels.find(m => m.id === selectedModel)?.pricing?.prompt}</span>
-            {" · "}
-            <span>C: ${availableModels.find(m => m.id === selectedModel)?.pricing?.completion}</span>
+          <div className="flex flex-col gap-1">
+            <div className="text-[0.7rem] font-medium text-neutral-600">
+              P: Prompt price · C: Completion price (per 1k tokens)
+            </div>
+            <div className="text-[0.825rem] font-medium text-neutral-800">
+              <span>P: ${availableModels.find(m => m.id === selectedModel)?.pricing?.prompt}</span>
+              {" · "}
+              <span>C: ${availableModels.find(m => m.id === selectedModel)?.pricing?.completion}</span>
+            </div>
           </div>
         )}
       </div>
