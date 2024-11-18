@@ -9,7 +9,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { ModelSelector } from "@/components/ModelSelector";
 import { MessageList } from "@/components/MessageList";
 import { MessageInput } from "@/components/MessageInput";
-import { fetchModels, APIError } from "@/lib/api";
+import { fetchModels, sendMessage, APIError } from "@/lib/api";
 
 interface ChatProps {
   provider: Provider;
