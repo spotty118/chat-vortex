@@ -54,19 +54,15 @@ export const ModelSelector = ({
               value={model.id}
               className="py-4 px-4 hover:bg-neutral-50 focus:bg-neutral-50 cursor-pointer"
             >
-              <div className="flex flex-col gap-3">
+              <div className="flex items-center justify-between w-full">
                 <span className="font-medium text-[0.925rem] leading-snug text-neutral-900">
                   {model.name || model.id}
                 </span>
                 {model.pricing && (
-                  <div className="grid grid-cols-2 gap-x-6 gap-y-2.5 text-[0.875rem] text-neutral-600">
-                    <div className="flex items-center justify-between">
-                      <span className="text-neutral-500">Prompt:</span>
-                      <span className="font-medium">${model.pricing.prompt}</span>
-                    </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-neutral-500">Completion:</span>
-                      <span className="font-medium">${model.pricing.completion}</span>
+                  <div className="text-[0.75rem] text-neutral-500 ml-4">
+                    <div className="flex items-center gap-2">
+                      <span>P: ${model.pricing.prompt}</span>
+                      <span>C: ${model.pricing.completion}</span>
                     </div>
                   </div>
                 )}
