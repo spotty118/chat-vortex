@@ -10,17 +10,19 @@ interface ChatProps {
   provider: Provider;
 }
 
+type Message = {
+  role: "user" | "assistant";
+  content: string;
+};
+
 export const Chat = ({ provider }: ChatProps) => {
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<Array<{
-    role: "user" | "assistant";
-    content: string;
-  }>>([]);
+  const [messages, setMessages] = useState<Message[]>([]);
 
   const handleSend = () => {
     if (!input.trim()) return;
 
-    const newMessages = [
+    const newMessages: Message[] = [
       ...messages,
       { role: "user", content: input },
       { role: "assistant", content: "This is a sample response." },

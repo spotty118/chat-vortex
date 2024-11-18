@@ -13,7 +13,7 @@ import { Provider } from "@/lib/types";
 import { useToast } from "@/components/ui/use-toast";
 
 interface ApiKeyModalProps {
-  provider: Provider;
+  provider: Provider | null;
   open: boolean;
   onClose: () => void;
 }
@@ -32,6 +32,15 @@ export const ApiKeyModal = ({ provider, open, onClose }: ApiKeyModalProps) => {
       return;
     }
 
+    if (!provider) {
+      toast({
+        title: "Error",
+        description: "No provider selected",
+        variant: "destructive",
+      });
+      return;
+    }
+
     // Here you would typically save the API key securely
     console.log("Saving API key for provider:", provider.id);
     toast({
@@ -40,6 +49,10 @@ export const ApiKeyModal = ({ provider, open, onClose }: ApiKeyModalProps) => {
     });
     onClose();
   };
+
+  if (!provider) {
+    return null;
+  }
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
