@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Provider } from "@/lib/types";
 import { useToast } from "@/components/ui/use-toast";
+import { fetchModels } from "@/lib/api";
 
 interface ApiKeyModalProps {
   provider: Provider | null;
@@ -20,9 +21,10 @@ interface ApiKeyModalProps {
 
 export const ApiKeyModal = ({ provider, open, onClose }: ApiKeyModalProps) => {
   const [apiKey, setApiKey] = useState("");
+  const [isSaving, setSaving] = useState(false);
   const { toast } = useToast();
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!apiKey.trim()) {
       toast({
         title: "Error",
@@ -41,23 +43,32 @@ export const ApiKeyModal = ({ provider, open, onClose }: ApiKeyModalProps) => {
       return;
     }
 
+    setSaving(true);
+
     try {
+      // Save API key
       localStorage.setItem(`${provider.id}_api_key`, apiKey.trim());
       console.log(`Saved API key for provider: ${provider.id}`);
       
+      // Fetch available models
+      const models = await fetchModels(provider);
+      console.log(`Fetched models for ${provider.id}:`, models);
+      
       toast({
         title: "Success",
-        description: "API key saved successfully",
+        description: "API key saved and models fetched successfully",
       });
       
       onClose();
     } catch (error) {
-      console.error("Error saving API key:", error);
+      console.error("Error saving API key or fetching models:", error);
       toast({
         title: "Error",
-        description: "Failed to save API key",
+        description: error instanceof Error ? error.message : "Failed to save API key",
         variant: "destructive",
       });
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -84,10 +95,12 @@ export const ApiKeyModal = ({ provider, open, onClose }: ApiKeyModalProps) => {
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={onClose}>
+          <Button variant="outline" onClick={onClose} disabled={isSaving}>
             Cancel
           </Button>
-          <Button onClick={handleSave}>Save</Button>
+          <Button onClick={handleSave} disabled={isSaving}>
+            {isSaving ? "Saving..." : "Save"}
+          </Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

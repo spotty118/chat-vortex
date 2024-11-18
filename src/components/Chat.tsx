@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -13,7 +13,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { sendMessage, APIError } from "@/lib/api";
+import { sendMessage, fetchModels, APIError } from "@/lib/api";
 
 interface ChatProps {
   provider: Provider;
@@ -27,12 +27,34 @@ type Message = {
 export const Chat = ({ provider }: ChatProps) => {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
-  const [selectedModel, setSelectedModel] = useState<string>(provider.models[0].id);
+  const [selectedModel, setSelectedModel] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
+  const [availableModels, setAvailableModels] = useState<any[]>([]);
   const { toast } = useToast();
 
+  useEffect(() => {
+    const loadModels = async () => {
+      try {
+        const models = await fetchModels(provider);
+        setAvailableModels(models.data || models);
+        if (models.data?.[0]?.id || models[0]?.id) {
+          setSelectedModel(models.data?.[0]?.id || models[0]?.id);
+        }
+      } catch (error) {
+        console.error("Error loading models:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load available models",
+          variant: "destructive",
+        });
+      }
+    };
+
+    loadModels();
+  }, [provider]);
+
   const handleSend = async () => {
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || !selectedModel) return;
 
     const userMessage: Message = { role: "user", content: input };
     setMessages(prev => [...prev, userMessage]);
@@ -61,7 +83,6 @@ export const Chat = ({ provider }: ChatProps) => {
         variant: "destructive",
       });
       
-      // Remove the user message if the API call failed
       setMessages(prev => prev.slice(0, -1));
       setInput(userMessage.content);
     } finally {
@@ -80,13 +101,15 @@ export const Chat = ({ provider }: ChatProps) => {
             <SelectValue placeholder="Select a model" />
           </SelectTrigger>
           <SelectContent>
-            {provider.models.map((model) => (
+            {availableModels.map((model) => (
               <SelectItem key={model.id} value={model.id}>
                 <div className="flex flex-col">
-                  <span>{model.name}</span>
-                  <span className="text-xs text-muted-foreground">
-                    ${model.tokenCost}/1k tokens
-                  </span>
+                  <span>{model.name || model.id}</span>
+                  {model.pricing && (
+                    <span className="text-xs text-muted-foreground">
+                      ${model.pricing.prompt}/1k prompt, ${model.pricing.completion}/1k completion
+                    </span>
+                  )}
                 </div>
               </SelectItem>
             ))}
@@ -127,7 +150,7 @@ export const Chat = ({ provider }: ChatProps) => {
             className="bg-background/80 backdrop-blur-sm"
             disabled={isLoading}
           />
-          <Button onClick={handleSend} disabled={isLoading}>
+          <Button onClick={handleSend} disabled={isLoading || !selectedModel}>
             {isLoading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
             ) : (

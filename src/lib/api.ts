@@ -21,6 +21,43 @@ export class APIError extends Error {
   }
 }
 
+export const fetchModels = async (provider: Provider): Promise<any> => {
+  const apiKey = localStorage.getItem(`${provider.id}_api_key`);
+  if (!apiKey) {
+    throw new APIError("API key not found");
+  }
+
+  console.log(`Fetching models for provider: ${provider.id}`);
+
+  try {
+    let response;
+    
+    switch (provider.id) {
+      case "openrouter":
+        response = await fetch("https://openrouter.ai/api/v1/models", {
+          headers: {
+            Authorization: `Bearer ${apiKey}`,
+          },
+        });
+        break;
+      // Add cases for other providers here
+      default:
+        throw new APIError("Provider not supported for model fetching");
+    }
+
+    if (!response.ok) {
+      throw new APIError(`Failed to fetch models: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log("Fetched models:", data);
+    return data;
+  } catch (error) {
+    console.error("Error fetching models:", error);
+    throw new APIError("Failed to fetch models from provider");
+  }
+}
+
 export const sendMessage = async (
   provider: Provider,
   modelId: string,
@@ -34,17 +71,37 @@ export const sendMessage = async (
   }
 
   try {
-    // This is where you'd make the actual API call to the provider
-    // For now, we'll simulate a response
-    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate network delay
+    let response;
     
+    switch (provider.id) {
+      case "openrouter":
+        response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: modelId,
+            messages: messages,
+          }),
+        });
+        break;
+      // Add cases for other providers here
+      default:
+        throw new APIError("Provider not supported");
+    }
+
+    if (!response.ok) {
+      throw new APIError(`API request failed: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log("API Response:", data);
+
     return {
-      message: "This is a simulated response. Replace with actual API integration.",
-      usage: {
-        prompt_tokens: 10,
-        completion_tokens: 20,
-        total_tokens: 30
-      }
+      message: data.choices[0].message.content,
+      usage: data.usage,
     };
   } catch (error) {
     console.error("API Error:", error);
