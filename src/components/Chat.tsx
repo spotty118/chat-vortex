@@ -99,8 +99,8 @@ export const Chat = ({ provider }: ChatProps) => {
   return (
     <div className="flex flex-col h-full">
       <div className="mb-4">
-        <div className="flex items-center gap-2 mb-2">
-          <h3 className="text-sm font-medium text-muted-foreground">Select Model</h3>
+        <div className="flex items-center gap-2 mb-4">
+          <h3 className="text-base font-semibold text-neutral-900">Select Model</h3>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -118,7 +118,7 @@ export const Chat = ({ provider }: ChatProps) => {
           onValueChange={setSelectedModel}
         >
           <SelectTrigger className="w-[300px] bg-white/95 backdrop-blur-sm border-neutral-200 hover:bg-white/98 transition-colors px-4 py-2.5">
-            <SelectValue placeholder="Select a model" />
+            <SelectValue placeholder="Choose a model" />
           </SelectTrigger>
           <SelectContent 
             className="max-h-[300px] w-[300px] bg-white/98 backdrop-blur-sm border-neutral-200 shadow-lg"
