@@ -53,9 +53,9 @@ export const ModelSelector = ({
               <SelectItem 
                 key={model.id} 
                 value={model.id}
-                className="py-4 px-4 hover:bg-neutral-50 focus:bg-neutral-50 cursor-pointer"
+                className={`py-4 px-4 hover:bg-neutral-50 focus:bg-neutral-50 cursor-pointer ${selectedModel === model.id ? 'font-bold' : 'font-normal'}`}
               >
-                <span className="font-medium text-[0.925rem] leading-snug text-neutral-900">
+                <span className="text-[0.925rem] leading-snug text-neutral-900">
                   {model.name || model.id}
                 </span>
               </SelectItem>
