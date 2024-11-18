@@ -41,13 +41,24 @@ export const ApiKeyModal = ({ provider, open, onClose }: ApiKeyModalProps) => {
       return;
     }
 
-    // Here you would typically save the API key securely
-    console.log("Saving API key for provider:", provider.id);
-    toast({
-      title: "Success",
-      description: "API key saved successfully",
-    });
-    onClose();
+    try {
+      localStorage.setItem(`${provider.id}_api_key`, apiKey.trim());
+      console.log(`Saved API key for provider: ${provider.id}`);
+      
+      toast({
+        title: "Success",
+        description: "API key saved successfully",
+      });
+      
+      onClose();
+    } catch (error) {
+      console.error("Error saving API key:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save API key",
+        variant: "destructive",
+      });
+    }
   };
 
   if (!provider) {
