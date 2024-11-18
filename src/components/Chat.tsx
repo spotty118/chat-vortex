@@ -104,7 +104,7 @@ export const Chat = ({ provider }: ChatProps) => {
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
-                <HelpCircle className="w-4 h-4 text-muted-foreground/70 hover:text-muted-foreground" />
+                <HelpCircle className="w-4 h-4 text-muted-foreground/70 hover:text-muted-foreground cursor-help" />
               </TooltipTrigger>
               <TooltipContent>
                 <p>Pricing shown per 1,000 tokens</p>
@@ -117,31 +117,31 @@ export const Chat = ({ provider }: ChatProps) => {
           value={selectedModel}
           onValueChange={setSelectedModel}
         >
-          <SelectTrigger className="w-[300px] bg-white/90 backdrop-blur-sm border-neutral-200 hover:bg-white/95 transition-colors">
+          <SelectTrigger className="w-[300px] bg-white/95 backdrop-blur-sm border-neutral-200 hover:bg-white/98 transition-colors px-4 py-2.5">
             <SelectValue placeholder="Select a model" />
           </SelectTrigger>
           <SelectContent 
-            className="max-h-[300px] w-[300px] bg-white/95 backdrop-blur-sm border-neutral-200 shadow-lg"
+            className="max-h-[300px] w-[300px] bg-white/98 backdrop-blur-sm border-neutral-200 shadow-lg"
           >
             {availableModels.map((model) => (
               <SelectItem 
                 key={model.id} 
                 value={model.id}
-                className="py-3 px-4 hover:bg-neutral-50 focus:bg-neutral-50 cursor-pointer"
+                className="py-3.5 px-4 hover:bg-neutral-50 focus:bg-neutral-50 cursor-pointer"
               >
-                <div className="flex flex-col gap-2.5 w-full">
-                  <span className="font-medium text-sm whitespace-normal break-words leading-snug text-neutral-900">
+                <div className="flex flex-col gap-3 w-full">
+                  <span className="font-medium text-[0.925rem] leading-snug text-neutral-900">
                     {model.name || model.id}
                   </span>
                   {model.pricing && (
-                    <div className="text-sm text-muted-foreground space-y-1.5">
-                      <div className="whitespace-normal break-words leading-relaxed flex justify-between">
-                        <span>Prompt:</span>
-                        <span className="font-medium">${model.pricing.prompt}/1k tokens</span>
+                    <div className="text-[0.875rem] text-neutral-600 space-y-2">
+                      <div className="flex items-center justify-between leading-relaxed">
+                        <span className="text-neutral-500">Prompt:</span>
+                        <span className="font-medium pl-4">${model.pricing.prompt}/1k tokens</span>
                       </div>
-                      <div className="whitespace-normal break-words leading-relaxed flex justify-between">
-                        <span>Completion:</span>
-                        <span className="font-medium">${model.pricing.completion}/1k tokens</span>
+                      <div className="flex items-center justify-between leading-relaxed">
+                        <span className="text-neutral-500">Completion:</span>
+                        <span className="font-medium pl-4">${model.pricing.completion}/1k tokens</span>
                       </div>
                     </div>
                   )}
