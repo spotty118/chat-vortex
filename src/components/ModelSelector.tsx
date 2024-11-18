@@ -40,36 +40,38 @@ export const ModelSelector = ({
         </TooltipProvider>
       </div>
       
-      <Select
-        value={selectedModel}
-        onValueChange={onModelSelect}
-      >
-        <SelectTrigger className="w-[300px] bg-white/95 backdrop-blur-sm border-neutral-200 hover:bg-white/98 transition-colors">
-          <SelectValue placeholder="Choose a model" />
-        </SelectTrigger>
-        <SelectContent className="max-h-[300px] w-[300px] bg-white/98 backdrop-blur-sm border-neutral-200 shadow-lg divide-y divide-neutral-100">
-          {availableModels.map((model) => (
-            <SelectItem 
-              key={model.id} 
-              value={model.id}
-              className="py-4 px-4 hover:bg-neutral-50 focus:bg-neutral-50 cursor-pointer"
-            >
-              <div className="flex flex-col gap-1.5">
+      <div className="flex gap-4 items-start">
+        <Select
+          value={selectedModel}
+          onValueChange={onModelSelect}
+        >
+          <SelectTrigger className="w-[300px] bg-white/95 backdrop-blur-sm border-neutral-200 hover:bg-white/98 transition-colors">
+            <SelectValue placeholder="Choose a model" />
+          </SelectTrigger>
+          <SelectContent className="max-h-[300px] w-[300px] bg-white/98 backdrop-blur-sm border-neutral-200 shadow-lg divide-y divide-neutral-100">
+            {availableModels.map((model) => (
+              <SelectItem 
+                key={model.id} 
+                value={model.id}
+                className="py-4 px-4 hover:bg-neutral-50 focus:bg-neutral-50 cursor-pointer"
+              >
                 <span className="font-medium text-[0.925rem] leading-snug text-neutral-900">
                   {model.name || model.id}
                 </span>
-                {model.pricing && (
-                  <div className="text-[0.75rem] text-neutral-500">
-                    <span>P: ${model.pricing.prompt}</span>
-                    {" · "}
-                    <span>C: ${model.pricing.completion}</span>
-                  </div>
-                )}
-              </div>
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        {/* Pricing information moved outside */}
+        {availableModels.find(m => m.id === selectedModel)?.pricing && (
+          <div className="text-[0.75rem] text-neutral-500 pt-2.5">
+            <span>P: ${availableModels.find(m => m.id === selectedModel)?.pricing?.prompt}</span>
+            {" · "}
+            <span>C: ${availableModels.find(m => m.id === selectedModel)?.pricing?.completion}</span>
+          </div>
+        )}
+      </div>
     </div>
   );
 };
