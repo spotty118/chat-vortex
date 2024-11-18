@@ -105,12 +105,12 @@ export const Chat = ({ provider }: ChatProps) => {
               <SelectItem 
                 key={model.id} 
                 value={model.id}
-                className="py-2 px-2"
+                className="py-2 px-3"
               >
-                <div className="flex flex-col gap-1 min-w-0">
-                  <span className="font-medium break-words whitespace-normal leading-snug">{model.name || model.id}</span>
+                <div className="flex flex-col gap-1 w-full">
+                  <span className="font-medium break-words whitespace-normal leading-tight">{model.name || model.id}</span>
                   {model.pricing && (
-                    <span className="text-xs text-muted-foreground break-words whitespace-normal leading-snug">
+                    <span className="text-xs text-muted-foreground break-words whitespace-normal leading-tight">
                       ${model.pricing.prompt}/1k prompt, ${model.pricing.completion}/1k completion
                     </span>
                   )}
