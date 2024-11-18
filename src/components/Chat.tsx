@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Provider } from "@/lib/types";
-import { Send, Loader2 } from "lucide-react";
+import { Send, Loader2, HelpCircle } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import {
   Select,
@@ -13,6 +13,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 import { sendMessage, fetchModels, APIError } from "@/lib/api";
 
 interface ChatProps {
@@ -93,29 +99,49 @@ export const Chat = ({ provider }: ChatProps) => {
   return (
     <div className="flex flex-col h-full">
       <div className="mb-4">
+        <div className="flex items-center gap-2 mb-2">
+          <h3 className="text-sm font-medium text-muted-foreground">Select Model</h3>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <HelpCircle className="w-4 h-4 text-muted-foreground/70 hover:text-muted-foreground" />
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Pricing shown per 1,000 tokens</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        </div>
+        
         <Select
           value={selectedModel}
           onValueChange={setSelectedModel}
         >
-          <SelectTrigger className="w-[300px] bg-background/80 backdrop-blur-sm">
+          <SelectTrigger className="w-[300px] bg-white/90 backdrop-blur-sm border-neutral-200 hover:bg-white/95 transition-colors">
             <SelectValue placeholder="Select a model" />
           </SelectTrigger>
-          <SelectContent className="max-h-[300px] w-[300px]">
+          <SelectContent 
+            className="max-h-[300px] w-[300px] bg-white/95 backdrop-blur-sm border-neutral-200 shadow-lg"
+          >
             {availableModels.map((model) => (
               <SelectItem 
                 key={model.id} 
                 value={model.id}
-                className="py-3 px-4"
+                className="py-3 px-4 hover:bg-neutral-50 focus:bg-neutral-50 cursor-pointer"
               >
-                <div className="flex flex-col gap-2 w-full">
-                  <span className="font-medium text-sm whitespace-normal break-words leading-snug">{model.name || model.id}</span>
+                <div className="flex flex-col gap-2.5 w-full">
+                  <span className="font-medium text-sm whitespace-normal break-words leading-snug text-neutral-900">
+                    {model.name || model.id}
+                  </span>
                   {model.pricing && (
-                    <div className="text-xs text-muted-foreground space-y-1">
-                      <div className="whitespace-normal break-words leading-snug">
-                        Prompt: ${model.pricing.prompt}/1k tokens
+                    <div className="text-sm text-muted-foreground space-y-1.5">
+                      <div className="whitespace-normal break-words leading-relaxed flex justify-between">
+                        <span>Prompt:</span>
+                        <span className="font-medium">${model.pricing.prompt}/1k tokens</span>
                       </div>
-                      <div className="whitespace-normal break-words leading-snug">
-                        Completion: ${model.pricing.completion}/1k tokens
+                      <div className="whitespace-normal break-words leading-relaxed flex justify-between">
+                        <span>Completion:</span>
+                        <span className="font-medium">${model.pricing.completion}/1k tokens</span>
                       </div>
                     </div>
                   )}
