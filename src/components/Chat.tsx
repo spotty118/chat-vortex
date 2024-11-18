@@ -107,10 +107,10 @@ export const Chat = ({ provider }: ChatProps) => {
                 value={model.id}
                 className="py-3 px-2"
               >
-                <div className="flex flex-col gap-1">
-                  <span className="font-medium">{model.name || model.id}</span>
+                <div className="flex flex-col gap-1 w-full break-words">
+                  <span className="font-medium whitespace-normal">{model.name || model.id}</span>
                   {model.pricing && (
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-muted-foreground whitespace-normal">
                       ${model.pricing.prompt}/1k prompt, ${model.pricing.completion}/1k completion
                     </span>
                   )}
