@@ -5,14 +5,13 @@ import { ProviderCard } from "@/components/ProviderCard";
 import { LatencyStats } from "@/components/LatencyStats";
 import { ApiKeyModal } from "@/components/ApiKeyModal";
 import { Chat } from "@/components/Chat";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MessageSquare, Code, Wand } from "lucide-react";
+import { ResizablePanelGroup, ResizablePanel, ResizableHandle } from "@/components/ui/resizable";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { MessageSquare } from "lucide-react";
 
 const Index = () => {
   const [activeProvider, setActiveProvider] = useState<Provider | null>(null);
-  const [configureProvider, setConfigureProvider] = useState<Provider | null>(
-    null
-  );
+  const [configureProvider, setConfigureProvider] = useState<Provider | null>(null);
 
   const handleProviderSelect = (provider: Provider) => {
     setActiveProvider(provider);
@@ -23,64 +22,58 @@ const Index = () => {
   };
 
   return (
-    <div className="container py-8 space-y-8 animate-fade-in">
-      <div className="text-center mb-8">
-        <h1 className="text-4xl font-bold mb-2 text-white">AI Chat Dashboard</h1>
-        <p className="text-neutral-light">
-          Select a provider to start chatting with AI
-        </p>
-      </div>
-
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {providers.map((provider) => (
-          <ProviderCard
-            key={provider.id}
-            provider={provider}
-            isActive={activeProvider?.id === provider.id}
-            onSelect={handleProviderSelect}
-            onSettings={handleProviderSettings}
-          />
-        ))}
-      </div>
-
-      {activeProvider && (
-        <div className="space-y-6">
-          <LatencyStats providerId={activeProvider.id} />
-
-          <Tabs defaultValue="chat" className="w-full">
-            <TabsList className="glass-card">
-              <TabsTrigger value="chat" className="flex items-center gap-2">
-                <MessageSquare className="w-4 h-4" />
-                Chat
-              </TabsTrigger>
-              <TabsTrigger value="code" className="flex items-center gap-2">
-                <Code className="w-4 h-4" />
-                Code
-              </TabsTrigger>
-              <TabsTrigger value="creative" className="flex items-center gap-2">
-                <Wand className="w-4 h-4" />
-                Creative
-              </TabsTrigger>
-            </TabsList>
-            <TabsContent value="chat">
-              <Chat provider={activeProvider} />
-            </TabsContent>
-            <TabsContent value="code">
-              <div className="text-center p-8 text-neutral-light">
-                Code Assistant coming soon
+    <div className="h-screen w-full bg-gradient-to-br from-sapphire to-amethyst p-4">
+      <ResizablePanelGroup direction="horizontal" className="h-[calc(100vh-2rem)] rounded-lg border">
+        {/* Left Panel - Provider Selection */}
+        <ResizablePanel defaultSize={25} minSize={20} maxSize={30}>
+          <div className="h-full flex flex-col bg-background/50 backdrop-blur-lg">
+            <div className="p-4 border-b">
+              <h2 className="text-lg font-semibold flex items-center gap-2">
+                <MessageSquare className="w-5 h-5" />
+                AI Providers
+              </h2>
+            </div>
+            <ScrollArea className="flex-1 p-4">
+              <div className="space-y-4">
+                {providers.map((provider) => (
+                  <ProviderCard
+                    key={provider.id}
+                    provider={provider}
+                    isActive={activeProvider?.id === provider.id}
+                    onSelect={handleProviderSelect}
+                    onSettings={handleProviderSettings}
+                  />
+                ))}
               </div>
-            </TabsContent>
-            <TabsContent value="creative">
-              <div className="text-center p-8 text-neutral-light">
-                Creative Tools coming soon
+            </ScrollArea>
+          </div>
+        </ResizablePanel>
+
+        <ResizableHandle withHandle />
+
+        {/* Right Panel - Chat and Stats */}
+        <ResizablePanel defaultSize={75}>
+          <div className="h-full flex flex-col bg-background/50 backdrop-blur-lg">
+            {activeProvider ? (
+              <>
+                <div className="p-4 border-b">
+                  <LatencyStats providerId={activeProvider.id} />
+                </div>
+                <div className="flex-1 p-4">
+                  <Chat provider={activeProvider} />
+                </div>
+              </>
+            ) : (
+              <div className="h-full flex items-center justify-center text-muted-foreground">
+                Select a provider to start chatting
               </div>
-            </TabsContent>
-          </Tabs>
-        </div>
-      )}
+            )}
+          </div>
+        </ResizablePanel>
+      </ResizablePanelGroup>
 
       <ApiKeyModal
-        provider={configureProvider!}
+        provider={configureProvider}
         open={!!configureProvider}
         onClose={() => setConfigureProvider(null)}
       />

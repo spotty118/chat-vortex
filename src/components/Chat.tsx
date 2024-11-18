@@ -32,8 +32,8 @@ export const Chat = ({ provider }: ChatProps) => {
   };
 
   return (
-    <Card className="glass-card h-[600px] flex flex-col">
-      <ScrollArea className="flex-1 p-4">
+    <div className="flex flex-col h-full">
+      <ScrollArea className="flex-1 pr-4">
         <div className="space-y-4">
           {messages.map((message, index) => (
             <div
@@ -46,7 +46,7 @@ export const Chat = ({ provider }: ChatProps) => {
                 className={`max-w-[80%] p-3 rounded-lg ${
                   message.role === "user"
                     ? "bg-electric text-white"
-                    : "bg-neutral-light"
+                    : "bg-background/80 backdrop-blur-sm"
                 }`}
               >
                 {message.content}
@@ -55,19 +55,20 @@ export const Chat = ({ provider }: ChatProps) => {
           ))}
         </div>
       </ScrollArea>
-      <div className="p-4 border-t">
+      <div className="pt-4">
         <div className="flex gap-2">
           <Input
             value={input}
             onChange={(e) => setInput(e.target.value)}
             placeholder="Type your message..."
             onKeyPress={(e) => e.key === "Enter" && handleSend()}
+            className="bg-background/80 backdrop-blur-sm"
           />
           <Button onClick={handleSend}>
             <Send className="w-4 h-4" />
           </Button>
         </div>
       </div>
-    </Card>
+    </div>
   );
 };

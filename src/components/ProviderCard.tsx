@@ -30,41 +30,42 @@ export const ProviderCard = ({
 
   return (
     <Card
-      className={`glass-card p-4 transition-all duration-300 ${
+      className={`bg-background/60 backdrop-blur-sm border transition-all duration-300 hover:bg-background/80 ${
         isActive ? "ring-2 ring-electric" : ""
       }`}
     >
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-3">
-          <img
-            src={provider.logo}
-            alt={provider.name}
-            className="w-8 h-8 rounded-full"
-          />
-          <div>
-            <h3 className="font-semibold">{provider.name}</h3>
-            <div className="flex items-center gap-2">
-              <span
-                className={`w-2 h-2 rounded-full ${getStatusColor(
-                  provider.status
-                )}`}
-              />
-              <span className="text-sm text-gray-500 capitalize">
-                {provider.status}
-              </span>
+      <div className="p-4">
+        <div className="flex items-center justify-between mb-3">
+          <div className="flex items-center gap-3">
+            <img
+              src={provider.logo}
+              alt={provider.name}
+              className="w-8 h-8 rounded-full"
+            />
+            <div>
+              <h3 className="font-semibold">{provider.name}</h3>
+              <div className="flex items-center gap-2">
+                <span
+                  className={`w-2 h-2 rounded-full ${getStatusColor(
+                    provider.status
+                  )}`}
+                />
+                <span className="text-sm text-muted-foreground capitalize">
+                  {provider.status}
+                </span>
+              </div>
             </div>
           </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => onSettings(provider)}
+          >
+            <Settings className="w-4 h-4" />
+          </Button>
         </div>
-        <Button
-          variant="ghost"
-          size="icon"
-          onClick={() => onSettings(provider)}
-        >
-          <Settings className="w-4 h-4" />
-        </Button>
-      </div>
-      <div className="space-y-3">
-        <div className="flex flex-wrap gap-2">
+
+        <div className="flex flex-wrap gap-2 mb-3">
           {provider.models.map((model) => (
             <Badge
               key={model.id}
@@ -75,6 +76,7 @@ export const ProviderCard = ({
             </Badge>
           ))}
         </div>
+
         <Button
           className="w-full"
           variant={isActive ? "secondary" : "default"}
