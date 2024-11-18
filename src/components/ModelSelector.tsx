@@ -60,9 +60,9 @@ export const ModelSelector = ({
                 </span>
                 {model.pricing && (
                   <div className="text-[0.75rem] text-neutral-500">
-                    <span>Prompt: ${model.pricing.prompt}</span>
+                    <span>P: ${model.pricing.prompt}</span>
                     {" · "}
-                    <span>Completion: ${model.pricing.completion}</span>
+                    <span>C: ${model.pricing.completion}</span>
                   </div>
                 )}
               </div>
