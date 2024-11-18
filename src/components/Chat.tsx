@@ -100,21 +100,24 @@ export const Chat = ({ provider }: ChatProps) => {
           <SelectTrigger className="w-[300px] bg-background/80 backdrop-blur-sm">
             <SelectValue placeholder="Select a model" />
           </SelectTrigger>
-          <SelectContent className="max-h-[300px]">
+          <SelectContent className="max-h-[300px] w-[300px]">
             {availableModels.map((model) => (
               <SelectItem 
                 key={model.id} 
                 value={model.id}
-                className="py-2 px-3"
+                className="py-3 px-4"
               >
-                <div className="flex flex-col gap-1">
-                  <span className="font-medium text-sm">{model.name || model.id}</span>
+                <div className="flex flex-col gap-2 w-full">
+                  <span className="font-medium text-sm whitespace-normal break-words leading-snug">{model.name || model.id}</span>
                   {model.pricing && (
-                    <span className="text-xs text-muted-foreground">
-                      ${model.pricing.prompt}/1k tokens (prompt)
-                      <br />
-                      ${model.pricing.completion}/1k tokens (completion)
-                    </span>
+                    <div className="text-xs text-muted-foreground space-y-1">
+                      <div className="whitespace-normal break-words leading-snug">
+                        Prompt: ${model.pricing.prompt}/1k tokens
+                      </div>
+                      <div className="whitespace-normal break-words leading-snug">
+                        Completion: ${model.pricing.completion}/1k tokens
+                      </div>
+                    </div>
                   )}
                 </div>
               </SelectItem>
