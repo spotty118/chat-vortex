@@ -34,31 +34,15 @@ export const providers: Provider[] = [
         capabilities: ["chat", "code", "analysis"],
         tokenCost: 0.025,
       },
+      {
+        id: "claude-instant-1",
+        name: "Claude Instant",
+        capabilities: ["chat", "code"],
+        tokenCost: 0.008,
+      },
     ],
     latency: 300,
     tps: 8,
-    status: "online",
-  },
-  {
-    id: "google",
-    name: "Google AI",
-    logo: "/placeholder.svg",
-    models: [
-      {
-        id: "gemini-pro",
-        name: "Gemini Pro",
-        capabilities: ["chat", "code", "analysis", "vision"],
-        tokenCost: 0.01,
-      },
-      {
-        id: "gemini-ultra",
-        name: "Gemini Ultra",
-        capabilities: ["chat", "code", "analysis", "vision", "reasoning"],
-        tokenCost: 0.03,
-      },
-    ],
-    latency: 200,
-    tps: 15,
     status: "online",
   },
   {
@@ -81,56 +65,6 @@ export const providers: Provider[] = [
     ],
     latency: 280,
     tps: 12,
-    status: "online",
-  },
-  {
-    id: "mistral",
-    name: "Mistral AI",
-    logo: "/placeholder.svg",
-    models: [
-      {
-        id: "mistral-tiny",
-        name: "Mistral Tiny",
-        capabilities: ["chat"],
-        tokenCost: 0.001,
-      },
-      {
-        id: "mistral-small",
-        name: "Mistral Small",
-        capabilities: ["chat", "code"],
-        tokenCost: 0.002,
-      },
-      {
-        id: "mistral-medium",
-        name: "Mistral Medium",
-        capabilities: ["chat", "code", "analysis"],
-        tokenCost: 0.004,
-      },
-    ],
-    latency: 220,
-    tps: 10,
-    status: "online",
-  },
-  {
-    id: "cohere",
-    name: "Cohere",
-    logo: "/placeholder.svg",
-    models: [
-      {
-        id: "command",
-        name: "Command",
-        capabilities: ["chat", "analysis"],
-        tokenCost: 0.002,
-      },
-      {
-        id: "command-light",
-        name: "Command Light",
-        capabilities: ["chat"],
-        tokenCost: 0.001,
-      },
-    ],
-    latency: 270,
-    tps: 8,
     status: "online",
   }
 ];
