@@ -5,6 +5,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -24,7 +25,9 @@ export const ApiKeyModal = ({ provider, open, onClose }: ApiKeyModalProps) => {
   const [isSaving, setSaving] = useState(false);
   const { toast } = useToast();
 
-  const handleSave = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     if (!apiKey.trim()) {
       toast({
         title: "Error",
@@ -81,8 +84,12 @@ export const ApiKeyModal = ({ provider, open, onClose }: ApiKeyModalProps) => {
       <DialogContent className="glass-card">
         <DialogHeader>
           <DialogTitle>Configure {provider.name}</DialogTitle>
+          <DialogDescription>
+            Enter your API key to start using {provider.name} models. 
+            Your API key will be stored securely in your browser.
+          </DialogDescription>
         </DialogHeader>
-        <div className="space-y-4 py-4">
+        <form onSubmit={handleSubmit} className="space-y-4 py-4">
           <div className="space-y-2">
             <Label htmlFor="apiKey">API Key</Label>
             <Input
@@ -91,17 +98,18 @@ export const ApiKeyModal = ({ provider, open, onClose }: ApiKeyModalProps) => {
               value={apiKey}
               onChange={(e) => setApiKey(e.target.value)}
               placeholder="Enter your API key"
+              required
             />
           </div>
-        </div>
-        <DialogFooter>
-          <Button variant="outline" onClick={onClose} disabled={isSaving}>
-            Cancel
-          </Button>
-          <Button onClick={handleSave} disabled={isSaving}>
-            {isSaving ? "Saving..." : "Save"}
-          </Button>
-        </DialogFooter>
+          <DialogFooter>
+            <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>
+              Cancel
+            </Button>
+            <Button type="submit" disabled={isSaving}>
+              {isSaving ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </form>
       </DialogContent>
     </Dialog>
   );
