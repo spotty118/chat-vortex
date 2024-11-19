@@ -6,10 +6,9 @@ const GOOGLE_API_BASE = 'https://generativelanguage.googleapis.com/v1';
 export const fetchGoogleModels = async (apiKey: string) => {
   console.log('Fetching Google AI models...');
   try {
-    const response = await fetch(`${GOOGLE_API_BASE}/models`, {
+    const response = await fetch(`${GOOGLE_API_BASE}/models?key=${apiKey}`, {
       headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        'Content-Type': 'application/json'
       }
     });
 
@@ -40,12 +39,11 @@ export const sendGoogleMessage = async (
   
   try {
     const response = await fetch(
-      `${GOOGLE_API_BASE}/models/${modelId}:generateContent`, 
+      `${GOOGLE_API_BASE}/models/${modelId}:generateContent?key=${apiKey}`, 
       {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${apiKey}`
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
           contents: messages.map(msg => ({

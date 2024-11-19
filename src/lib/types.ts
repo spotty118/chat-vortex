@@ -20,3 +20,8 @@ export type LatencyStats = {
   average: number;
   tps: number;
 };
+
+export type ChatMessage = {
+  role: "user" | "assistant";
+  content: string;
+};
