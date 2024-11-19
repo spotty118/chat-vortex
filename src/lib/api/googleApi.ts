@@ -6,14 +6,12 @@ const GOOGLE_API_BASE = 'https://generativelanguage.googleapis.com/v1';
 export const fetchGoogleModels = async (apiKey: string) => {
   console.log('Fetching Google AI models...');
   try {
-    const response = await fetch(`${GOOGLE_API_BASE}/models?key=${apiKey}`, {
-      headers: {
-        'Content-Type': 'application/json'
-      }
-    });
+    // Google requires API key as a query parameter
+    const response = await fetch(`${GOOGLE_API_BASE}/models?key=${apiKey}`);
 
     if (!response.ok) {
-      console.error('Google API Error:', await response.text());
+      const errorText = await response.text();
+      console.error('Google API Error:', errorText);
       throw new APIError(`Failed to fetch models: ${response.statusText}`);
     }
 
@@ -26,7 +24,7 @@ export const fetchGoogleModels = async (apiKey: string) => {
     ) || [];
   } catch (error) {
     console.error('Error fetching Google models:', error);
-    throw new APIError(error instanceof Error ? error.message : 'Failed to fetch models');
+    throw error instanceof APIError ? error : new APIError('Failed to fetch models');
   }
 };
 
@@ -36,10 +34,9 @@ export const sendGoogleMessage = async (
   messages: ChatMessage[]
 ) => {
   console.log('Sending message to Google AI...', { modelId });
-  
   try {
     const response = await fetch(
-      `${GOOGLE_API_BASE}/models/${modelId}:generateContent?key=${apiKey}`, 
+      `${GOOGLE_API_BASE}/models/${modelId}:generateContent?key=${apiKey}`,
       {
         method: 'POST',
         headers: {
@@ -55,7 +52,8 @@ export const sendGoogleMessage = async (
     );
 
     if (!response.ok) {
-      console.error('Google API Error:', await response.text());
+      const errorText = await response.text();
+      console.error('Google API Error:', errorText);
       throw new APIError(`Failed to send message: ${response.statusText}`);
     }
 
@@ -64,14 +62,10 @@ export const sendGoogleMessage = async (
 
     return {
       message: data.candidates[0].content.parts[0].text,
-      usage: {
-        total_tokens: data.usage?.totalTokens,
-        prompt_tokens: data.usage?.promptTokens,
-        completion_tokens: data.usage?.completionTokens,
-      }
+      usage: data.usage
     };
   } catch (error) {
     console.error('Error sending message to Google:', error);
-    throw new APIError(error instanceof Error ? error.message : 'Failed to send message');
+    throw error instanceof APIError ? error : new APIError('Failed to send message');
   }
 };

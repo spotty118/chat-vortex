@@ -1,5 +1,6 @@
 import { Provider } from "./types";
 import { fetchGoogleModels, sendGoogleMessage } from "./api/googleApi";
+import { fetchOpenRouterModels, sendOpenRouterMessage } from "./api/openRouterApi";
 import { APIError } from "./errors";
 
 export { APIError };
@@ -16,6 +17,8 @@ export const fetchModels = async (provider: Provider): Promise<any> => {
     switch (provider.id) {
       case "google":
         return fetchGoogleModels(apiKey);
+      case "openrouter":
+        return fetchOpenRouterModels(apiKey);
       case "openai":
         const responseOpenAI = await fetch("https://api.openai.com/v1/models", {
           headers: {
@@ -64,22 +67,6 @@ export const fetchModels = async (provider: Provider): Promise<any> => {
         console.log(`Successfully fetched models for Mistral:`, dataMistral);
         return dataMistral.models;
 
-      case "openrouter":
-        const responseOpenRouter = await fetch("https://openrouter.ai/api/v1/models", {
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${apiKey}`,
-          },
-        });
-
-        if (!responseOpenRouter.ok) {
-          throw new APIError(`Failed to fetch models: ${responseOpenRouter.statusText}`);
-        }
-
-        const dataOpenRouter = await responseOpenRouter.json();
-        console.log(`Successfully fetched models for OpenRouter:`, dataOpenRouter);
-        return dataOpenRouter.models;
-
       case "cohere":
         const responseCohere = await fetch("https://api.cohere.ai/v1/models", {
           headers: {
@@ -121,6 +108,8 @@ export const sendMessage = async (
     switch (provider.id) {
       case "google":
         return sendGoogleMessage(apiKey, modelId, messages);
+      case "openrouter":
+        return sendOpenRouterMessage(apiKey, modelId, messages);
       case "openai":
         const responseOpenAI = await fetch("https://api.openai.com/v1/chat/completions", {
           method: "POST",
@@ -203,33 +192,6 @@ export const sendMessage = async (
         return {
           message: dataMistral.choices[0].message.content,
           usage: dataMistral.usage,
-        };
-
-      case "openrouter":
-        const responseOpenRouter = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${apiKey}`,
-          },
-          body: JSON.stringify({
-            model: modelId,
-            messages: messages,
-          }),
-        });
-
-        if (!responseOpenRouter.ok) {
-          const errorText = await responseOpenRouter.text();
-          console.error(`API Error response from OpenRouter:`, errorText);
-          throw new APIError(`API request failed: ${responseOpenRouter.statusText}`);
-        }
-
-        const dataOpenRouter = await responseOpenRouter.json();
-        console.log(`API Response from OpenRouter:`, dataOpenRouter);
-
-        return {
-          message: dataOpenRouter.choices[0].message.content,
-          usage: dataOpenRouter.usage,
         };
 
       case "cohere":
