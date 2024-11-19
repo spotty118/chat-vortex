@@ -1,25 +1,8 @@
 import { Provider } from "./types";
+import { fetchGoogleModels, sendGoogleMessage } from "./api/googleApi";
+import { APIError } from "./errors";
 
-interface ChatMessage {
-  role: "user" | "assistant";
-  content: string;
-}
-
-interface ChatResponse {
-  message: string;
-  usage?: {
-    prompt_tokens: number;
-    completion_tokens: number;
-    total_tokens: number;
-  };
-}
-
-export class APIError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = "APIError";
-  }
-}
+export { APIError };
 
 export const fetchModels = async (provider: Provider): Promise<any> => {
   const apiKey = localStorage.getItem(`${provider.id}_api_key`);
@@ -30,199 +13,260 @@ export const fetchModels = async (provider: Provider): Promise<any> => {
   console.log(`Fetching models for provider: ${provider.id}`);
 
   try {
-    let response;
-    let headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-    let url: string;
-
     switch (provider.id) {
-      case "openai":
-        url = "https://api.openai.com/v1/models";
-        headers.Authorization = `Bearer ${apiKey}`;
-        break;
-      case "anthropic":
-        url = "https://api.anthropic.com/v1/models";
-        headers["x-api-key"] = apiKey;
-        break;
       case "google":
-        url = "https://generativelanguage.googleapis.com/v1/models";
-        headers.Authorization = `Bearer ${apiKey}`;
-        break;
+        return fetchGoogleModels(apiKey);
+      case "openai":
+        const responseOpenAI = await fetch("https://api.openai.com/v1/models", {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+        });
+
+        if (!responseOpenAI.ok) {
+          throw new APIError(`Failed to fetch models: ${responseOpenAI.statusText}`);
+        }
+
+        const dataOpenAI = await responseOpenAI.json();
+        console.log(`Successfully fetched models for OpenAI:`, dataOpenAI);
+        return dataOpenAI.models;
+
+      case "anthropic":
+        const responseAnthropic = await fetch("https://api.anthropic.com/v1/models", {
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": apiKey,
+          },
+        });
+
+        if (!responseAnthropic.ok) {
+          throw new APIError(`Failed to fetch models: ${responseAnthropic.statusText}`);
+        }
+
+        const dataAnthropic = await responseAnthropic.json();
+        console.log(`Successfully fetched models for Anthropic:`, dataAnthropic);
+        return dataAnthropic.models;
+
       case "mistral":
-        url = "https://api.mistral.ai/v1/models";
-        headers.Authorization = `Bearer ${apiKey}`;
-        break;
+        const responseMistral = await fetch("https://api.mistral.ai/v1/models", {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+        });
+
+        if (!responseMistral.ok) {
+          throw new APIError(`Failed to fetch models: ${responseMistral.statusText}`);
+        }
+
+        const dataMistral = await responseMistral.json();
+        console.log(`Successfully fetched models for Mistral:`, dataMistral);
+        return dataMistral.models;
+
       case "openrouter":
-        url = "https://openrouter.ai/api/v1/models";
-        headers.Authorization = `Bearer ${apiKey}`;
-        break;
+        const responseOpenRouter = await fetch("https://openrouter.ai/api/v1/models", {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+        });
+
+        if (!responseOpenRouter.ok) {
+          throw new APIError(`Failed to fetch models: ${responseOpenRouter.statusText}`);
+        }
+
+        const dataOpenRouter = await responseOpenRouter.json();
+        console.log(`Successfully fetched models for OpenRouter:`, dataOpenRouter);
+        return dataOpenRouter.models;
+
       case "cohere":
-        url = "https://api.cohere.ai/v1/models";
-        headers.Authorization = `Bearer ${apiKey}`;
-        break;
+        const responseCohere = await fetch("https://api.cohere.ai/v1/models", {
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+        });
+
+        if (!responseCohere.ok) {
+          throw new APIError(`Failed to fetch models: ${responseCohere.statusText}`);
+        }
+
+        const dataCohere = await responseCohere.json();
+        console.log(`Successfully fetched models for Cohere:`, dataCohere);
+        return dataCohere.models;
+
       default:
         throw new APIError("Provider not supported for model fetching");
     }
-
-    response = await fetch(url, { headers });
-
-    if (!response.ok) {
-      throw new APIError(`Failed to fetch models: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    console.log(`Successfully fetched models for ${provider.id}:`, data);
-    return data;
   } catch (error) {
     console.error(`Error fetching models for ${provider.id}:`, error);
-    throw new APIError(error instanceof Error ? error.message : "Failed to fetch models from provider");
+    throw error instanceof APIError ? error : new APIError("Failed to fetch models from provider");
   }
-}
+};
 
 export const sendMessage = async (
   provider: Provider,
   modelId: string,
-  messages: ChatMessage[]
-): Promise<ChatResponse> => {
-  console.log(`Sending message to ${provider.name} using model ${modelId}`);
-  
+  messages: any[]
+): Promise<any> => {
   const apiKey = localStorage.getItem(`${provider.id}_api_key`);
   if (!apiKey) {
     throw new APIError("API key not found. Please configure the provider first.");
   }
 
-  try {
-    let response;
-    let headers: Record<string, string> = {
-      "Content-Type": "application/json",
-    };
-    let url: string;
-    let body: any;
+  console.log(`Sending message to ${provider.name} using model ${modelId}`);
 
+  try {
     switch (provider.id) {
+      case "google":
+        return sendGoogleMessage(apiKey, modelId, messages);
       case "openai":
-        url = "https://api.openai.com/v1/chat/completions";
-        headers.Authorization = `Bearer ${apiKey}`;
-        body = {
-          model: modelId,
-          messages: messages,
+        const responseOpenAI = await fetch("https://api.openai.com/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: modelId,
+            messages: messages,
+          }),
+        });
+
+        if (!responseOpenAI.ok) {
+          const errorText = await responseOpenAI.text();
+          console.error(`API Error response from OpenAI:`, errorText);
+          throw new APIError(`API request failed: ${responseOpenAI.statusText}`);
+        }
+
+        const dataOpenAI = await responseOpenAI.json();
+        console.log(`API Response from OpenAI:`, dataOpenAI);
+
+        return {
+          message: dataOpenAI.choices[0].message.content,
+          usage: dataOpenAI.usage,
         };
-        break;
 
       case "anthropic":
-        url = "https://api.anthropic.com/v1/messages";
-        headers["x-api-key"] = apiKey;
-        body = {
-          model: modelId,
-          messages: messages.map(msg => ({
-            role: msg.role === "user" ? "user" : "assistant",
-            content: msg.content,
-          })),
-        };
-        break;
+        const responseAnthropic = await fetch("https://api.anthropic.com/v1/messages", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "x-api-key": apiKey,
+          },
+          body: JSON.stringify({
+            model: modelId,
+            messages: messages.map(msg => ({
+              role: msg.role === "user" ? "user" : "assistant",
+              content: msg.content,
+            })),
+          }),
+        });
 
-      case "google":
-        url = `https://generativelanguage.googleapis.com/v1/models/${modelId}:generateContent`;
-        headers.Authorization = `Bearer ${apiKey}`;
-        body = {
-          contents: messages.map(msg => ({
-            role: msg.role,
-            parts: [{ text: msg.content }],
-          })),
+        if (!responseAnthropic.ok) {
+          const errorText = await responseAnthropic.text();
+          console.error(`API Error response from Anthropic:`, errorText);
+          throw new APIError(`API request failed: ${responseAnthropic.statusText}`);
+        }
+
+        const dataAnthropic = await responseAnthropic.json();
+        console.log(`API Response from Anthropic:`, dataAnthropic);
+
+        return {
+          message: dataAnthropic.content[0].text,
+          usage: dataAnthropic.usage,
         };
-        break;
 
       case "mistral":
-        url = "https://api.mistral.ai/v1/chat/completions";
-        headers.Authorization = `Bearer ${apiKey}`;
-        body = {
-          model: modelId,
-          messages: messages,
+        const responseMistral = await fetch("https://api.mistral.ai/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: modelId,
+            messages: messages,
+          }),
+        });
+
+        if (!responseMistral.ok) {
+          const errorText = await responseMistral.text();
+          console.error(`API Error response from Mistral:`, errorText);
+          throw new APIError(`API request failed: ${responseMistral.statusText}`);
+        }
+
+        const dataMistral = await responseMistral.json();
+        console.log(`API Response from Mistral:`, dataMistral);
+
+        return {
+          message: dataMistral.choices[0].message.content,
+          usage: dataMistral.usage,
         };
-        break;
 
       case "openrouter":
-        url = "https://openrouter.ai/api/v1/chat/completions";
-        headers.Authorization = `Bearer ${apiKey}`;
-        body = {
-          model: modelId,
-          messages: messages,
+        const responseOpenRouter = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: modelId,
+            messages: messages,
+          }),
+        });
+
+        if (!responseOpenRouter.ok) {
+          const errorText = await responseOpenRouter.text();
+          console.error(`API Error response from OpenRouter:`, errorText);
+          throw new APIError(`API request failed: ${responseOpenRouter.statusText}`);
+        }
+
+        const dataOpenRouter = await responseOpenRouter.json();
+        console.log(`API Response from OpenRouter:`, dataOpenRouter);
+
+        return {
+          message: dataOpenRouter.choices[0].message.content,
+          usage: dataOpenRouter.usage,
         };
-        break;
 
       case "cohere":
-        url = "https://api.cohere.ai/v1/generate";
-        headers.Authorization = `Bearer ${apiKey}`;
-        body = {
-          model: modelId,
-          prompt: messages[messages.length - 1].content,
-          max_tokens: 1000,
+        const responseCohere = await fetch("https://api.cohere.ai/v1/generate", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${apiKey}`,
+          },
+          body: JSON.stringify({
+            model: modelId,
+            prompt: messages[messages.length - 1].content,
+            max_tokens: 1000,
+          }),
+        });
+
+        if (!responseCohere.ok) {
+          const errorText = await responseCohere.text();
+          console.error(`API Error response from Cohere:`, errorText);
+          throw new APIError(`API request failed: ${responseCohere.statusText}`);
+        }
+
+        const dataCohere = await responseCohere.json();
+        console.log(`API Response from Cohere:`, dataCohere);
+
+        return {
+          message: dataCohere.generations[0].text,
+          usage: {
+            total_tokens: dataCohere.meta.billed_tokens,
+          },
         };
-        break;
 
       default:
         throw new APIError("Provider not supported");
     }
-
-    console.log(`Making API request to ${url}`);
-    response = await fetch(url, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(body),
-    });
-
-    if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`API Error response from ${provider.id}:`, errorText);
-      throw new APIError(`API request failed: ${response.statusText}`);
-    }
-
-    const data = await response.json();
-    console.log(`API Response from ${provider.id}:`, data);
-
-    // Handle different response formats
-    let message = "";
-    let usage = undefined;
-
-    switch (provider.id) {
-      case "openai":
-      case "openrouter":
-        message = data.choices[0].message.content;
-        usage = data.usage;
-        break;
-      case "anthropic":
-        message = data.content[0].text;
-        usage = data.usage;
-        break;
-      case "google":
-        message = data.candidates[0].content.parts[0].text;
-        usage = {
-          total_tokens: data.usage?.totalTokens,
-          prompt_tokens: data.usage?.promptTokens,
-          completion_tokens: data.usage?.completionTokens,
-        };
-        break;
-      case "mistral":
-        message = data.choices[0].message.content;
-        usage = data.usage;
-        break;
-      case "cohere":
-        message = data.generations[0].text;
-        usage = {
-          total_tokens: data.meta.billed_tokens,
-        };
-        break;
-      default:
-        message = data.choices?.[0]?.message?.content || data.content || "No response content";
-    }
-
-    return {
-      message,
-      usage,
-    };
   } catch (error) {
     console.error(`API Error with ${provider.id}:`, error);
-    throw new APIError(error instanceof Error ? error.message : "Failed to send message to provider");
+    throw error instanceof APIError ? error : new APIError("Failed to send message to provider");
   }
-}
+};
