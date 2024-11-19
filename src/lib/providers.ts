@@ -46,6 +46,56 @@ export const providers: Provider[] = [
     status: "online",
   },
   {
+    id: "google",
+    name: "Google AI",
+    logo: "/placeholder.svg",
+    models: [
+      {
+        id: "gemini-pro",
+        name: "Gemini Pro",
+        capabilities: ["chat", "code", "analysis"],
+        tokenCost: 0.01,
+      },
+      {
+        id: "gemini-pro-vision",
+        name: "Gemini Pro Vision",
+        capabilities: ["chat", "code", "vision"],
+        tokenCost: 0.02,
+      },
+    ],
+    latency: 200,
+    tps: 15,
+    status: "online",
+  },
+  {
+    id: "mistral",
+    name: "Mistral AI",
+    logo: "/placeholder.svg",
+    models: [
+      {
+        id: "mistral-small",
+        name: "Mistral Small",
+        capabilities: ["chat", "code"],
+        tokenCost: 0.002,
+      },
+      {
+        id: "mistral-medium",
+        name: "Mistral Medium",
+        capabilities: ["chat", "code", "analysis"],
+        tokenCost: 0.006,
+      },
+      {
+        id: "mistral-large",
+        name: "Mistral Large",
+        capabilities: ["chat", "code", "analysis"],
+        tokenCost: 0.012,
+      },
+    ],
+    latency: 180,
+    tps: 20,
+    status: "online",
+  },
+  {
     id: "openrouter",
     name: "OpenRouter",
     logo: "/placeholder.svg",
@@ -65,6 +115,28 @@ export const providers: Provider[] = [
     ],
     latency: 280,
     tps: 12,
+    status: "online",
+  },
+  {
+    id: "cohere",
+    name: "Cohere",
+    logo: "/placeholder.svg",
+    models: [
+      {
+        id: "command",
+        name: "Command",
+        capabilities: ["chat", "code"],
+        tokenCost: 0.003,
+      },
+      {
+        id: "command-light",
+        name: "Command Light",
+        capabilities: ["chat"],
+        tokenCost: 0.001,
+      },
+    ],
+    latency: 220,
+    tps: 10,
     status: "online",
   }
 ];

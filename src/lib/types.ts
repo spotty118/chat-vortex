@@ -11,7 +11,7 @@ export type Provider = {
 export type Model = {
   id: string;
   name: string;
-  capabilities: string[];
+  capabilities: ("chat" | "code" | "analysis" | "vision")[];
   tokenCost: number;
 };
 
