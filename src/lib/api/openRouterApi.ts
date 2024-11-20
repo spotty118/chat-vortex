@@ -18,7 +18,9 @@ export const fetchOpenRouterModels = async (apiKey: string) => {
 
     const data = await response.json();
     console.log('Successfully fetched OpenRouter models:', data);
-    return data.models || []; // Return empty array if no models
+    
+    // Return the data array directly since that's what the ModelSelector expects
+    return data.data || [];
   } catch (error) {
     console.error('Error fetching OpenRouter models:', error);
     throw error instanceof APIError ? error : new APIError('Failed to fetch models');
