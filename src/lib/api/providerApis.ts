@@ -1,4 +1,5 @@
 import { APIError } from "../errors";
+import type { ChatMessage } from "../types";
 
 export const fetchOpenAIModels = async (apiKey: string) => {
   const response = await fetch("https://api.openai.com/v1/models", {
@@ -68,14 +69,20 @@ export const fetchCohereModels = async (apiKey: string) => {
   return data.data || [];
 };
 
-// Message sending functions
-export const sendOpenAIMessage = async (apiKey: string, modelId: string, messages: any[]) => {
+// Message sending functions with signal parameter
+export const sendOpenAIMessage = async (
+  apiKey: string, 
+  modelId: string, 
+  messages: ChatMessage[],
+  signal?: AbortSignal
+) => {
   const response = await fetch("https://api.openai.com/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
     },
+    signal,
     body: JSON.stringify({
       model: modelId,
       messages: messages,
@@ -93,13 +100,19 @@ export const sendOpenAIMessage = async (apiKey: string, modelId: string, message
   };
 };
 
-export const sendAnthropicMessage = async (apiKey: string, modelId: string, messages: any[]) => {
+export const sendAnthropicMessage = async (
+  apiKey: string, 
+  modelId: string, 
+  messages: ChatMessage[],
+  signal?: AbortSignal
+) => {
   const response = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "x-api-key": apiKey,
     },
+    signal,
     body: JSON.stringify({
       model: modelId,
       messages: messages.map(msg => ({
@@ -120,13 +133,19 @@ export const sendAnthropicMessage = async (apiKey: string, modelId: string, mess
   };
 };
 
-export const sendMistralMessage = async (apiKey: string, modelId: string, messages: any[]) => {
+export const sendMistralMessage = async (
+  apiKey: string, 
+  modelId: string, 
+  messages: ChatMessage[],
+  signal?: AbortSignal
+) => {
   const response = await fetch("https://api.mistral.ai/v1/chat/completions", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
     },
+    signal,
     body: JSON.stringify({
       model: modelId,
       messages: messages,
@@ -144,13 +163,19 @@ export const sendMistralMessage = async (apiKey: string, modelId: string, messag
   };
 };
 
-export const sendCohereMessage = async (apiKey: string, modelId: string, messages: any[]) => {
+export const sendCohereMessage = async (
+  apiKey: string, 
+  modelId: string, 
+  messages: ChatMessage[],
+  signal?: AbortSignal
+) => {
   const response = await fetch("https://api.cohere.ai/v1/generate", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${apiKey}`,
     },
+    signal,
     body: JSON.stringify({
       model: modelId,
       prompt: messages[messages.length - 1].content,
