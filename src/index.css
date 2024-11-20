@@ -60,6 +60,7 @@
     @apply border-border;
   }
   body {
-    @apply bg-gradient-to-br from-sapphire to-amethyst min-h-screen text-foreground antialiased;
+    @apply bg-neutral-100 text-gray-800 antialiased;
+    font-feature-settings: "rlig" 1, "calt" 1;
   }
 }

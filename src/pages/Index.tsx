@@ -22,13 +22,13 @@ const Index = () => {
   };
 
   return (
-    <div className="h-screen w-full bg-gradient-to-br from-sapphire to-amethyst p-4">
-      <ResizablePanelGroup direction="horizontal" className="h-[calc(100vh-2rem)] rounded-lg border">
+    <div className="h-screen w-full bg-neutral-100 p-4">
+      <ResizablePanelGroup direction="horizontal" className="h-[calc(100vh-2rem)] rounded-lg border bg-white shadow-sm">
         {/* Left Panel - Provider Selection */}
         <ResizablePanel defaultSize={25} minSize={20} maxSize={30}>
-          <div className="h-full flex flex-col bg-background/50 backdrop-blur-lg">
+          <div className="h-full flex flex-col">
             <div className="p-4 border-b">
-              <h2 className="text-lg font-semibold flex items-center gap-2">
+              <h2 className="text-lg font-semibold flex items-center gap-2 text-gray-800">
                 <MessageSquare className="w-5 h-5" />
                 AI Providers
               </h2>
@@ -53,7 +53,7 @@ const Index = () => {
 
         {/* Right Panel - Chat and Stats */}
         <ResizablePanel defaultSize={75}>
-          <div className="h-full flex flex-col bg-background/50 backdrop-blur-lg">
+          <div className="h-full flex flex-col bg-white">
             {activeProvider ? (
               <>
                 <div className="p-4 border-b">
@@ -64,7 +64,7 @@ const Index = () => {
                 </div>
               </>
             ) : (
-              <div className="h-full flex items-center justify-center text-muted-foreground">
+              <div className="h-full flex items-center justify-center text-gray-500">
                 Select a provider to start chatting
               </div>
             )}
