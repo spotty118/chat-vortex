@@ -3,8 +3,6 @@ export type Provider = {
   name: string;
   logo: string;
   models: Model[];
-  latency: number;
-  tps: number;
   status: "online" | "maintenance" | "offline";
   icon?: React.ComponentType;
 };
