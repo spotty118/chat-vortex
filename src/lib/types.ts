@@ -6,6 +6,7 @@ export type Provider = {
   latency: number;
   tps: number;
   status: "online" | "maintenance" | "offline";
+  icon?: React.ComponentType;
 };
 
 export type Model = {

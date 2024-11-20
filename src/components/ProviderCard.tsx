@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Settings } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 interface ProviderCardProps {
   provider: Provider;
@@ -78,11 +79,23 @@ export const ProviderCard = ({
         </div>
 
         <Button
-          className="w-full"
           variant={isActive ? "secondary" : "default"}
+          className={cn(
+            "w-full transition-all",
+            !isActive && "h-12 overflow-hidden"
+          )}
           onClick={() => onSelect(provider)}
         >
-          {isActive ? "Selected" : "Select Provider"}
+          {isActive ? (
+            <>
+              {/* Existing content */}
+            </>
+          ) : (
+            <div className="flex items-center gap-2">
+              {provider.icon && <div className="h-5 w-5">{<provider.icon />}</div>}
+              <span>{provider.name}</span>
+            </div>
+          )}
         </Button>
       </div>
     </Card>
