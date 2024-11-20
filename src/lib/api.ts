@@ -49,7 +49,8 @@ export const fetchModels = async (provider: Provider): Promise<any> => {
 export const sendMessage = async (
   provider: Provider,
   modelId: string,
-  messages: any[]
+  messages: any[],
+  signal?: AbortSignal
 ): Promise<any> => {
   const apiKey = localStorage.getItem(`${provider.id}_api_key`);
   if (!apiKey) {
@@ -61,17 +62,17 @@ export const sendMessage = async (
   try {
     switch (provider.id) {
       case "google":
-        return sendGoogleMessage(apiKey, modelId, messages);
+        return sendGoogleMessage(apiKey, modelId, messages, signal);
       case "openrouter":
-        return sendOpenRouterMessage(apiKey, modelId, messages);
+        return sendOpenRouterMessage(apiKey, modelId, messages, signal);
       case "openai":
-        return sendOpenAIMessage(apiKey, modelId, messages);
+        return sendOpenAIMessage(apiKey, modelId, messages, signal);
       case "anthropic":
-        return sendAnthropicMessage(apiKey, modelId, messages);
+        return sendAnthropicMessage(apiKey, modelId, messages, signal);
       case "mistral":
-        return sendMistralMessage(apiKey, modelId, messages);
+        return sendMistralMessage(apiKey, modelId, messages, signal);
       case "cohere":
-        return sendCohereMessage(apiKey, modelId, messages);
+        return sendCohereMessage(apiKey, modelId, messages, signal);
       default:
         throw new APIError("Provider not supported");
     }

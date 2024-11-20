@@ -26,6 +26,7 @@ export const Chat = ({ provider }: ChatProps) => {
   const [selectedModel, setSelectedModel] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [availableModels, setAvailableModels] = useState<any[]>([]);
+  const [controller, setController] = useState<AbortController | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -57,9 +58,17 @@ export const Chat = ({ provider }: ChatProps) => {
     setInput("");
     setIsLoading(true);
 
+    const newController = new AbortController();
+    setController(newController);
+
     try {
       console.log(`Sending message using model: ${selectedModel}`);
-      const response = await sendMessage(provider, selectedModel, [...messages, userMessage]);
+      const response = await sendMessage(
+        provider, 
+        selectedModel, 
+        [...messages, userMessage],
+        newController.signal
+      );
       
       const assistantMessage: Message = {
         role: "assistant",
@@ -72,17 +81,38 @@ export const Chat = ({ provider }: ChatProps) => {
         console.log("Token usage:", response.usage);
       }
     } catch (error) {
-      console.error("Error sending message:", error);
-      toast({
-        title: "Error",
-        description: error instanceof APIError ? error.message : "Failed to send message",
-        variant: "destructive",
-      });
-      
-      setMessages(prev => prev.slice(0, -1));
-      setInput(userMessage.content);
+      if (error instanceof APIError) {
+        console.error("Error sending message:", error);
+        toast({
+          title: "Error",
+          description: error.message,
+          variant: "destructive",
+        });
+        
+        setMessages(prev => prev.slice(0, -1));
+        setInput(userMessage.content);
+      }
     } finally {
       setIsLoading(false);
+      setController(null);
+    }
+  };
+
+  const handleStopResponse = () => {
+    if (controller) {
+      controller.abort();
+      setIsLoading(false);
+      setController(null);
+    }
+  };
+
+  const handleClearChat = () => {
+    setMessages([]);
+    setInput("");
+    if (controller) {
+      controller.abort();
+      setIsLoading(false);
+      setController(null);
     }
   };
 
@@ -100,6 +130,8 @@ export const Chat = ({ provider }: ChatProps) => {
         isLoading={isLoading}
         selectedModel={selectedModel}
         onSendMessage={handleSend}
+        onClearChat={handleClearChat}
+        onStopResponse={handleStopResponse}
       />
     </div>
   );
