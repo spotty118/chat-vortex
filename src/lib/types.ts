@@ -15,12 +15,6 @@ export type Model = {
   tokenCost: number;
 };
 
-export type LatencyStats = {
-  current: number;
-  average: number;
-  tps: number;
-};
-
 export type ChatMessage = {
   role: "user" | "assistant";
   content: string;

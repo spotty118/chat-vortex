@@ -8,14 +8,14 @@ interface ProviderCardProps {
   provider: Provider;
   isActive: boolean;
   onSelect: (provider: Provider) => void;
-  onSettings: (provider: Provider) => void;
+  onConfigure: (provider: Provider) => void;
 }
 
 export const ProviderCard = ({
   provider,
   isActive,
   onSelect,
-  onSettings,
+  onConfigure,
 }: ProviderCardProps) => {
   const getStatusColor = (status: Provider["status"]) => {
     switch (status) {
@@ -59,7 +59,7 @@ export const ProviderCard = ({
           <Button
             variant="ghost"
             size="icon"
-            onClick={() => onSettings(provider)}
+            onClick={() => onConfigure(provider)}
           >
             <Settings className="w-4 h-4" />
           </Button>
