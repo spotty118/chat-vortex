@@ -62,9 +62,9 @@ export const sendMessage = async (
   try {
     switch (provider.id) {
       case "google":
-        return sendGoogleMessage(apiKey, modelId, messages, signal);
+        return sendGoogleMessage(apiKey, modelId, messages);
       case "openrouter":
-        return sendOpenRouterMessage(apiKey, modelId, messages, signal);
+        return sendOpenRouterMessage(apiKey, modelId, messages);
       case "openai":
         return sendOpenAIMessage(apiKey, modelId, messages, signal);
       case "anthropic":
