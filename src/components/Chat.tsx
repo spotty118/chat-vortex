@@ -29,21 +29,26 @@ export const Chat = ({ provider }: ChatProps) => {
   const [controller, setController] = useState<AbortController | null>(null);
   const { toast } = useToast();
 
+  // Reset state when provider changes
   useEffect(() => {
-    // Clear models and selected model when provider changes
+    console.log(`Provider changed to: ${provider.name}`);
     setAvailableModels([]);
     setSelectedModel("");
+    setMessages([]);
     
     const loadModels = async () => {
       try {
+        console.log(`Fetching models for ${provider.name}...`);
         const models = await fetchModels(provider);
-        setAvailableModels(models.data || models);
-        if (models.data?.[0]?.id || models[0]?.id) {
-          setSelectedModel(models.data?.[0]?.id || models[0]?.id);
+        const modelList = models.data || models;
+        console.log(`Received models for ${provider.name}:`, modelList);
+        
+        setAvailableModels(modelList);
+        if (modelList?.[0]?.id) {
+          setSelectedModel(modelList[0].id);
         }
       } catch (error) {
-        console.error("Error loading models:", error);
-        // Removed the error toast here
+        console.error(`Error loading models for ${provider.name}:`, error);
       }
     };
 
