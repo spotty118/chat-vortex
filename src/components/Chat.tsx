@@ -39,11 +39,7 @@ export const Chat = ({ provider }: ChatProps) => {
         }
       } catch (error) {
         console.error("Error loading models:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load available models",
-          variant: "destructive",
-        });
+        // Removed the error toast here
       }
     };
 
