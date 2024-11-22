@@ -5,6 +5,8 @@ export type Provider = {
   models: Model[];
   status: "online" | "maintenance" | "offline";
   icon?: React.ComponentType;
+  latency: number;
+  tps: number;
 };
 
 export type Model = {
