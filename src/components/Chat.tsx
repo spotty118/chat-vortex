@@ -30,6 +30,10 @@ export const Chat = ({ provider }: ChatProps) => {
   const { toast } = useToast();
 
   useEffect(() => {
+    // Clear models and selected model when provider changes
+    setAvailableModels([]);
+    setSelectedModel("");
+    
     const loadModels = async () => {
       try {
         const models = await fetchModels(provider);
