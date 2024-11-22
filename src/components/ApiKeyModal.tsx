@@ -81,7 +81,7 @@ export const ApiKeyModal = ({ provider, open, onClose }: ApiKeyModalProps) => {
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent className="glass-card">
+      <DialogContent className="bg-white/95 backdrop-blur-sm border-neutral-200">
         <DialogHeader>
           <DialogTitle>Configure {provider.name}</DialogTitle>
           <DialogDescription>
