@@ -44,7 +44,7 @@ export const MessageInput = ({
             <Square className="w-4 h-4" />
           </Button>
         ) : (
-          <Button onClick={onSendMessage} disabled={!selectedModel}>
+          <Button onClick={onSendMessage} disabled={!input.trim()}>
             <Send className="w-4 h-4" />
           </Button>
         )}
