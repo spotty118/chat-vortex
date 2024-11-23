@@ -1,16 +1,19 @@
 import { useState, useEffect, useRef } from "react";
 import { nanoid } from "nanoid";
-import { Search, Download, Star, MessageSquare } from "lucide-react";
+import { Search, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Provider, ChatMessage } from "@/lib/types";
+import { Provider } from "@/lib/types";
 import { useToast } from "@/components/ui/use-toast";
 import { ModelSelector } from "@/components/ModelSelector";
 import { MessageList } from "@/components/MessageList";
 import { MessageInput } from "@/components/MessageInput";
+import { AISettings } from "@/components/AISettings";
+import { TokenUsageDisplay } from "@/components/TokenUsageDisplay";
+import { useAISettings } from "@/hooks/useAISettings";
 import { fetchModels, sendMessage, APIError } from "@/lib/api";
 import { saveConversation, exportConversation } from "@/lib/conversation";
+import { MessageWithMetadata } from "@/lib/types/ai";
 
 interface ChatProps {
   provider: Provider;
@@ -18,14 +21,14 @@ interface ChatProps {
 
 export const Chat = ({ provider }: ChatProps) => {
   const [input, setInput] = useState("");
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [messages, setMessages] = useState<MessageWithMetadata[]>([]);
   const [selectedModel, setSelectedModel] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [availableModels, setAvailableModels] = useState<any[]>([]);
   const [controller, setController] = useState<AbortController | null>(null);
-  const [tokenCount, setTokenCount] = useState(0);
   const conversationId = useRef(nanoid());
+  const { settings, updateSettings } = useAISettings();
   const { toast } = useToast();
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -71,11 +74,15 @@ export const Chat = ({ provider }: ChatProps) => {
   const handleSend = async () => {
     if (!input.trim() || isLoading || !selectedModel) return;
 
-    const userMessage: ChatMessage = {
+    const userMessage: MessageWithMetadata = {
       id: nanoid(),
       role: "user",
       content: input,
       timestamp: Date.now(),
+      metadata: {
+        model: selectedModel,
+        ...settings
+      }
     };
     
     setMessages(prev => [...prev, userMessage]);
@@ -86,24 +93,28 @@ export const Chat = ({ provider }: ChatProps) => {
     setController(newController);
 
     try {
-      console.log(`Sending message using model: ${selectedModel}`);
+      console.log(`Sending message using model: ${selectedModel} with settings:`, settings);
       const response = await sendMessage(
         provider, 
         selectedModel, 
         [...messages, userMessage],
-        newController.signal
+        newController.signal,
+        settings
       );
       
-      const assistantMessage: ChatMessage = {
+      const assistantMessage: MessageWithMetadata = {
         id: nanoid(),
         role: "assistant",
         content: response.message,
         timestamp: Date.now(),
-        tokens: response.usage?.total_tokens,
+        metadata: {
+          model: selectedModel,
+          ...settings
+        },
+        usage: response.usage
       };
 
       setMessages(prev => [...prev, assistantMessage]);
-      setTokenCount(prev => prev + (response.usage?.total_tokens || 0));
       
       if (response.usage) {
         console.log("Token usage:", response.usage);
@@ -127,44 +138,31 @@ export const Chat = ({ provider }: ChatProps) => {
     }
   };
 
-  const handleExport = () => {
-    if (messages.length === 0) {
-      toast({
-        title: "Nothing to export",
-        description: "Start a conversation first!",
-      });
-      return;
-    }
-
-    exportConversation({
-      id: conversationId.current,
-      provider: provider.id,
-      model: selectedModel,
-      messages,
-      createdAt: messages[0].timestamp,
-      updatedAt: Date.now(),
-    });
-
-    toast({
-      title: "Conversation exported",
-      description: "Check your downloads folder",
-    });
-  };
-
   const filteredMessages = searchQuery
     ? messages.filter(msg => 
         msg.content.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : messages;
 
+  const totalUsage = messages.reduce((acc, msg) => {
+    return {
+      prompt_tokens: acc.prompt_tokens + (msg.usage?.prompt_tokens || 0),
+      completion_tokens: acc.completion_tokens + (msg.usage?.completion_tokens || 0),
+      total_tokens: acc.total_tokens + (msg.usage?.total_tokens || 0)
+    };
+  }, { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 });
+
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between mb-4">
-        <ModelSelector
-          selectedModel={selectedModel}
-          availableModels={availableModels}
-          onModelSelect={setSelectedModel}
-        />
+        <div className="flex items-center gap-4">
+          <ModelSelector
+            selectedModel={selectedModel}
+            availableModels={availableModels}
+            onModelSelect={setSelectedModel}
+          />
+          <AISettings settings={settings} onUpdate={updateSettings} />
+        </div>
         <div className="flex items-center gap-2">
           <div className="relative">
             <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -178,7 +176,14 @@ export const Chat = ({ provider }: ChatProps) => {
           <Button
             variant="outline"
             size="icon"
-            onClick={handleExport}
+            onClick={() => exportConversation({
+              id: conversationId.current,
+              provider: provider.id,
+              model: selectedModel,
+              messages,
+              createdAt: messages[0]?.timestamp || Date.now(),
+              updatedAt: Date.now(),
+            })}
             title="Export conversation"
           >
             <Download className="w-4 h-4" />
@@ -189,12 +194,8 @@ export const Chat = ({ provider }: ChatProps) => {
       <MessageList messages={filteredMessages} />
       <div ref={bottomRef} />
 
-      <div className="mt-4 border-t pt-4">
-        {tokenCount > 0 && (
-          <div className="text-sm text-muted-foreground mb-2">
-            Total tokens used: {tokenCount}
-          </div>
-        )}
+      <div className="mt-4 border-t pt-4 space-y-4">
+        <TokenUsageDisplay usage={totalUsage} maxTokens={settings.maxTokens || 2000} />
         <MessageInput
           input={input}
           setInput={setInput}
@@ -203,7 +204,6 @@ export const Chat = ({ provider }: ChatProps) => {
           onSendMessage={handleSend}
           onClearChat={() => {
             setMessages([]);
-            setTokenCount(0);
             conversationId.current = nanoid();
           }}
           onStopResponse={() => {

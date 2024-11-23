@@ -1,4 +1,5 @@
 import { Provider } from "./types";
+import { AIMetadata } from "./types/ai";
 import { fetchGoogleModels, sendGoogleMessage } from "./api/googleApi";
 import { fetchOpenRouterModels, sendOpenRouterMessage } from "./api/openRouterApi";
 import { APIError } from "./errors";
@@ -50,29 +51,30 @@ export const sendMessage = async (
   provider: Provider,
   modelId: string,
   messages: any[],
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  settings?: AIMetadata
 ): Promise<any> => {
   const apiKey = localStorage.getItem(`${provider.id}_api_key`);
   if (!apiKey) {
     throw new APIError("API key not found. Please configure the provider first.");
   }
 
-  console.log(`Sending message to ${provider.name} using model ${modelId}`);
+  console.log(`Sending message to ${provider.name} using model ${modelId} with settings:`, settings);
 
   try {
     switch (provider.id) {
       case "google":
-        return sendGoogleMessage(apiKey, modelId, messages);
+        return sendGoogleMessage(apiKey, modelId, messages, settings);
       case "openrouter":
-        return sendOpenRouterMessage(apiKey, modelId, messages);
+        return sendOpenRouterMessage(apiKey, modelId, messages, settings);
       case "openai":
-        return sendOpenAIMessage(apiKey, modelId, messages, signal);
+        return sendOpenAIMessage(apiKey, modelId, messages, signal, settings);
       case "anthropic":
-        return sendAnthropicMessage(apiKey, modelId, messages, signal);
+        return sendAnthropicMessage(apiKey, modelId, messages, signal, settings);
       case "mistral":
-        return sendMistralMessage(apiKey, modelId, messages, signal);
+        return sendMistralMessage(apiKey, modelId, messages, signal, settings);
       case "cohere":
-        return sendCohereMessage(apiKey, modelId, messages, signal);
+        return sendCohereMessage(apiKey, modelId, messages, signal, settings);
       default:
         throw new APIError("Provider not supported");
     }
