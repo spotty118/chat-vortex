@@ -4,7 +4,7 @@ export const providers: Provider[] = [
   {
     id: "openai",
     name: "OpenAI",
-    logo: "/placeholder.svg",
+    logo: "https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg",
     models: [
       {
         id: "gpt-4",
@@ -26,7 +26,7 @@ export const providers: Provider[] = [
   {
     id: "anthropic",
     name: "Anthropic",
-    logo: "/placeholder.svg",
+    logo: "https://upload.wikimedia.org/wikipedia/commons/8/86/Anthropic_logo.svg",
     models: [
       {
         id: "claude-2",
@@ -48,7 +48,7 @@ export const providers: Provider[] = [
   {
     id: "google",
     name: "Google AI",
-    logo: "/placeholder.svg",
+    logo: "https://www.gstatic.com/lamda/images/favicon_v1_150160cddff7f294ce30.svg",
     models: [
       {
         id: "gemini-pro",
@@ -70,7 +70,7 @@ export const providers: Provider[] = [
   {
     id: "mistral",
     name: "Mistral AI",
-    logo: "/placeholder.svg",
+    logo: "https://mistral.ai/favicon.ico",
     models: [
       {
         id: "mistral-small",
@@ -98,7 +98,7 @@ export const providers: Provider[] = [
   {
     id: "openrouter",
     name: "OpenRouter",
-    logo: "/placeholder.svg",
+    logo: "https://openrouter.ai/favicon.ico",
     models: [
       {
         id: "mistral-medium",
@@ -120,7 +120,7 @@ export const providers: Provider[] = [
   {
     id: "cohere",
     name: "Cohere",
-    logo: "/placeholder.svg",
+    logo: "https://cohere.com/favicon.ico",
     models: [
       {
         id: "command",
