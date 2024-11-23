@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { AIMetadata } from '@/lib/types/ai';
 
 const DEFAULT_SETTINGS: AIMetadata = {
+  model: '',  // Add the required model property
   temperature: 0.7,
   maxTokens: 2000,
   topP: 1,

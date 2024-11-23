@@ -64,17 +64,17 @@ export const sendMessage = async (
   try {
     switch (provider.id) {
       case "google":
-        return sendGoogleMessage(apiKey, modelId, messages, settings);
+        return sendGoogleMessage(apiKey, modelId, messages);
       case "openrouter":
-        return sendOpenRouterMessage(apiKey, modelId, messages, settings);
+        return sendOpenRouterMessage(apiKey, modelId, messages, signal, settings);
       case "openai":
-        return sendOpenAIMessage(apiKey, modelId, messages, signal, settings);
+        return sendOpenAIMessage(apiKey, modelId, messages, signal);
       case "anthropic":
-        return sendAnthropicMessage(apiKey, modelId, messages, signal, settings);
+        return sendAnthropicMessage(apiKey, modelId, messages, signal);
       case "mistral":
-        return sendMistralMessage(apiKey, modelId, messages, signal, settings);
+        return sendMistralMessage(apiKey, modelId, messages, signal);
       case "cohere":
-        return sendCohereMessage(apiKey, modelId, messages, signal, settings);
+        return sendCohereMessage(apiKey, modelId, messages, signal);
       default:
         throw new APIError("Provider not supported");
     }
