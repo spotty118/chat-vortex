@@ -13,14 +13,22 @@ import { Label } from "@/components/ui/label";
 import { Provider } from "@/lib/types";
 import { useToast } from "@/components/ui/use-toast";
 import { fetchModels } from "@/lib/api";
+import { ExternalLink } from "lucide-react";
 
-interface ApiKeyModalProps {
+const API_KEY_LINKS: Record<string, string> = {
+  openai: "https://platform.openai.com/api-keys",
+  anthropic: "https://console.anthropic.com/account/keys",
+  google: "https://makersuite.google.com/app/apikey",
+  mistral: "https://console.mistral.ai/api-keys",
+  openrouter: "https://openrouter.ai/keys",
+  cohere: "https://dashboard.cohere.com/api-keys"
+};
+
+export const ApiKeyModal = ({ provider, open, onClose }: { 
   provider: Provider | null;
   open: boolean;
   onClose: () => void;
-}
-
-export const ApiKeyModal = ({ provider, open, onClose }: ApiKeyModalProps) => {
+}) => {
   const [apiKey, setApiKey] = useState("");
   const [isSaving, setSaving] = useState(false);
   const { toast } = useToast();
@@ -49,11 +57,9 @@ export const ApiKeyModal = ({ provider, open, onClose }: ApiKeyModalProps) => {
     setSaving(true);
 
     try {
-      // Save API key
       localStorage.setItem(`${provider.id}_api_key`, apiKey.trim());
       console.log(`Saved API key for provider: ${provider.id}`);
       
-      // Fetch available models
       const models = await fetchModels(provider);
       console.log(`Fetched models for ${provider.id}:`, models);
       
@@ -79,14 +85,28 @@ export const ApiKeyModal = ({ provider, open, onClose }: ApiKeyModalProps) => {
     return null;
   }
 
+  const apiKeyLink = API_KEY_LINKS[provider.id];
+
   return (
     <Dialog open={open} onOpenChange={onClose}>
       <DialogContent className="bg-white/95 backdrop-blur-sm border-neutral-200">
         <DialogHeader>
           <DialogTitle>Configure {provider.name}</DialogTitle>
-          <DialogDescription>
-            Enter your API key to start using {provider.name} models. 
-            Your API key will be stored securely in your browser.
+          <DialogDescription className="space-y-2">
+            <p>Enter your API key to start using {provider.name} models.</p>
+            {apiKeyLink && (
+              <p>
+                <a 
+                  href={apiKeyLink}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-primary hover:underline inline-flex items-center gap-1"
+                >
+                  Get your {provider.name} API key here
+                  <ExternalLink className="h-3 w-3" />
+                </a>
+              </p>
+            )}
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
