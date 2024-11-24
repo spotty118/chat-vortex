@@ -138,5 +138,27 @@ export const providers: Provider[] = [
     latency: 220,
     tps: 10,
     status: "online",
+  },
+  {
+    id: "cloudflare",
+    name: "Cloudflare AI Gateway",
+    logo: "https://developers.cloudflare.com/favicon.ico",
+    models: [
+      {
+        id: "gpt-4",
+        name: "GPT-4",
+        capabilities: ["chat", "code", "analysis"],
+        tokenCost: 0.03,
+      },
+      {
+        id: "gpt-3.5-turbo",
+        name: "GPT-3.5 Turbo",
+        capabilities: ["chat", "code"],
+        tokenCost: 0.002,
+      },
+    ],
+    latency: 150,
+    tps: 20,
+    status: "online",
   }
 ];

@@ -2,6 +2,7 @@ import { Provider } from "./types";
 import { AIMetadata } from "./types/ai";
 import { fetchGoogleModels, sendGoogleMessage } from "./api/googleApi";
 import { fetchOpenRouterModels, sendOpenRouterMessage } from "./api/openRouterApi";
+import { fetchCloudflareModels, sendCloudflareMessage } from "./api/cloudflareApi";
 import { APIError } from "./errors";
 import { 
   fetchOpenAIModels, 
@@ -38,6 +39,8 @@ export const fetchModels = async (provider: Provider): Promise<any> => {
         return fetchMistralModels(apiKey);
       case "cohere":
         return fetchCohereModels(apiKey);
+      case "cloudflare":
+        return fetchCloudflareModels(apiKey);
       default:
         throw new APIError("Provider not supported");
     }
@@ -75,6 +78,8 @@ export const sendMessage = async (
         return sendMistralMessage(apiKey, modelId, messages, signal);
       case "cohere":
         return sendCohereMessage(apiKey, modelId, messages, signal);
+      case "cloudflare":
+        return sendCloudflareMessage(apiKey, modelId, messages, signal);
       default:
         throw new APIError("Provider not supported");
     }

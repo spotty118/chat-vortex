@@ -6,7 +6,6 @@ const GOOGLE_API_BASE = 'https://generativelanguage.googleapis.com/v1';
 export const fetchGoogleModels = async (apiKey: string) => {
   console.log('Fetching Google AI models...');
   try {
-    // Google requires API key as a query parameter
     const response = await fetch(`${GOOGLE_API_BASE}/models?key=${apiKey}`);
 
     if (!response.ok) {
@@ -18,7 +17,6 @@ export const fetchGoogleModels = async (apiKey: string) => {
     const data = await response.json();
     console.log('Successfully fetched Google AI models:', data);
     
-    // Filter for only the chat models
     return data.models?.filter((model: any) => 
       model.name.includes('chat') || model.name.includes('gemini')
     ) || [];
@@ -33,8 +31,10 @@ export const sendGoogleMessage = async (
   modelId: string,
   messages: ChatMessage[]
 ) => {
-  console.log('Sending message to Google AI...', { modelId });
+  console.log('Sending message to Google AI...', { modelId, messages });
   try {
+    const lastMessage = messages[messages.length - 1];
+    
     const response = await fetch(
       `${GOOGLE_API_BASE}/models/${modelId}:generateContent?key=${apiKey}`,
       {
@@ -43,10 +43,9 @@ export const sendGoogleMessage = async (
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          contents: messages.map(msg => ({
-            role: msg.role,
-            parts: [{ text: msg.content }]
-          }))
+          contents: [{
+            parts: [{ text: lastMessage.content }]
+          }]
         })
       }
     );
@@ -60,9 +59,17 @@ export const sendGoogleMessage = async (
     const data = await response.json();
     console.log('Google AI Response:', data);
 
+    if (!data.candidates?.[0]?.content?.parts?.[0]?.text) {
+      throw new APIError('Invalid response format from Google AI');
+    }
+
     return {
       message: data.candidates[0].content.parts[0].text,
-      usage: data.usage
+      usage: {
+        prompt_tokens: 0,
+        completion_tokens: 0,
+        total_tokens: 0
+      }
     };
   } catch (error) {
     console.error('Error sending message to Google:', error);
