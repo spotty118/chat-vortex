@@ -22,7 +22,7 @@ const API_KEY_LINKS: Record<string, string> = {
   mistral: "https://console.mistral.ai/api-keys",
   openrouter: "https://openrouter.ai/keys",
   cohere: "https://dashboard.cohere.com/api-keys",
-  cloudflare: "https://developers.cloudflare.com/ai-gateway/get-started/"
+  cloudflare: "https://dash.cloudflare.com/profile/api-tokens"
 };
 
 export const ApiKeyModal = ({ provider, open, onClose }: { 
@@ -31,7 +31,6 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
   onClose: () => void;
 }) => {
   const [apiKey, setApiKey] = useState("");
-  const [gatewayUrl, setGatewayUrl] = useState("");
   const [isSaving, setSaving] = useState(false);
   const { toast } = useToast();
 
@@ -42,15 +41,6 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
       toast({
         title: "Error",
         description: "Please enter an API key",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if (provider?.id === 'cloudflare' && !gatewayUrl.trim()) {
-      toast({
-        title: "Error",
-        description: "Please enter your Cloudflare AI Gateway URL",
         variant: "destructive",
       });
       return;
@@ -69,9 +59,6 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
 
     try {
       localStorage.setItem(`${provider.id}_api_key`, apiKey.trim());
-      if (provider.id === 'cloudflare') {
-        localStorage.setItem('cloudflare_gateway_url', gatewayUrl.trim());
-      }
       console.log(`Saved API key for provider: ${provider.id}`);
       
       const models = await fetchModels(provider);
@@ -135,19 +122,6 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
               required
             />
           </div>
-          {provider.id === 'cloudflare' && (
-            <div className="space-y-2">
-              <Label htmlFor="gatewayUrl">Gateway URL</Label>
-              <Input
-                id="gatewayUrl"
-                type="text"
-                value={gatewayUrl}
-                onChange={(e) => setGatewayUrl(e.target.value)}
-                placeholder="https://gateway.ai.cloudflare.com/v1/..."
-                required
-              />
-            </div>
-          )}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>
               Cancel
