@@ -28,7 +28,7 @@ export const sendCloudflareMessage = async (
     throw new APIError('Cloudflare AI Gateway URL not configured');
   }
 
-  console.log('Sending message via Cloudflare AI Gateway...', { modelId });
+  console.log('Sending message via Cloudflare AI Gateway...', { modelId, gatewayUrl });
   
   try {
     const response = await fetch(gatewayUrl, {
@@ -36,6 +36,10 @@ export const sendCloudflareMessage = async (
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${apiKey}`,
+        // Add CORS headers
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
       },
       signal,
       body: JSON.stringify({
@@ -43,7 +47,8 @@ export const sendCloudflareMessage = async (
         messages: messages.map(msg => ({
           role: msg.role,
           content: msg.content
-        }))
+        })),
+        stream: false
       })
     });
 
