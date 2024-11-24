@@ -28,18 +28,18 @@ export const sendCloudflareMessage = async (
     throw new APIError('Cloudflare AI Gateway URL not configured');
   }
 
-  console.log('Sending message via Cloudflare AI Gateway...', { modelId, gatewayUrl });
+  console.log('Sending message via Cloudflare AI Gateway...', { 
+    modelId, 
+    gatewayUrl: gatewayUrl.replace(/\/[^/]*$/, '/*'), // Log URL with ID masked
+    messageCount: messages.length 
+  });
   
   try {
     const response = await fetch(gatewayUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-        // Add CORS headers
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'POST, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization'
+        'Authorization': `Bearer ${apiKey}`
       },
       signal,
       body: JSON.stringify({
@@ -54,19 +54,40 @@ export const sendCloudflareMessage = async (
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Cloudflare Gateway Error:', errorText);
+      console.error('Cloudflare Gateway Error Response:', errorText);
+      
+      if (response.status === 403) {
+        throw new APIError('Access denied. Please check your API key and ensure CORS is enabled in your Cloudflare Workers settings.');
+      }
+      
       throw new APIError(`Failed to send message: ${response.statusText}`);
     }
 
     const data = await response.json();
-    console.log('Cloudflare Gateway Response:', data);
+    console.log('Cloudflare Gateway Response:', {
+      status: response.status,
+      hasChoices: !!data.choices,
+      messageLength: data.choices?.[0]?.message?.content?.length
+    });
+
+    if (!data.choices?.[0]?.message?.content) {
+      console.error('Invalid response format from Cloudflare:', data);
+      throw new APIError('Invalid response format from Cloudflare Gateway');
+    }
 
     return {
       message: data.choices[0].message.content,
-      usage: data.usage
+      usage: data.usage || {
+        prompt_tokens: 0,
+        completion_tokens: 0,
+        total_tokens: 0
+      }
     };
   } catch (error) {
     console.error('Error sending message via Cloudflare:', error);
-    throw error instanceof APIError ? error : new APIError('Failed to send message');
+    if (error instanceof APIError) {
+      throw error;
+    }
+    throw new APIError('Failed to send message to Cloudflare Gateway. Please ensure CORS is enabled in your Workers settings.');
   }
 };
