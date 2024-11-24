@@ -23,9 +23,14 @@ export const sendCloudflareMessage = async (
   messages: ChatMessage[],
   signal?: AbortSignal
 ) => {
-  const gatewayUrl = 'https://ai-gateway-cors.spotty118.workers.dev/';
+  const gatewayUrl = localStorage.getItem('cloudflare_gateway_url');
+  if (!gatewayUrl) {
+    throw new APIError('Cloudflare AI Gateway URL not configured');
+  }
+
   console.log('Sending message via Cloudflare AI Gateway...', { 
-    modelId,
+    modelId, 
+    gatewayUrl: gatewayUrl.replace(/\/[^/]*$/, '/*'), // Log URL with ID masked
     messageCount: messages.length 
   });
   
@@ -52,7 +57,7 @@ export const sendCloudflareMessage = async (
       console.error('Cloudflare Gateway Error Response:', errorText);
       
       if (response.status === 403) {
-        throw new APIError('Access denied. Please check your API key.');
+        throw new APIError('Access denied. Please check your API key and ensure CORS is enabled in your Cloudflare Workers settings.');
       }
       
       throw new APIError(`Failed to send message: ${response.statusText}`);
@@ -83,6 +88,6 @@ export const sendCloudflareMessage = async (
     if (error instanceof APIError) {
       throw error;
     }
-    throw new APIError('Failed to send message to Cloudflare Gateway');
+    throw new APIError('Failed to send message to Cloudflare Gateway. Please ensure CORS is enabled in your Workers settings.');
   }
 };
