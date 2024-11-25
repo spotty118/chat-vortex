@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -32,8 +32,15 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
 }) => {
   const [apiKey, setApiKey] = useState("");
   const [gatewayUrl, setGatewayUrl] = useState("");
-  const [isSaving, setSaving] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
+
+  useEffect(() => {
+    if (provider && provider.id === 'cloudflare') {
+      // Automatically set the gatewayUrl to the proxy server for Cloudflare
+      setGatewayUrl('http://localhost:8081/proxy/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/openai');
+    }
+  }, [provider]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,7 +72,7 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
       return;
     }
 
-    setSaving(true);
+    setIsSaving(true);
 
     try {
       localStorage.setItem(`${provider.id}_api_key`, apiKey.trim());
@@ -91,7 +98,7 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
         variant: "destructive",
       });
     } finally {
-      setSaving(false);
+      setIsSaving(false);
     }
   };
 
@@ -143,8 +150,9 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
                 type="text"
                 value={gatewayUrl}
                 onChange={(e) => setGatewayUrl(e.target.value)}
-                placeholder="https://gateway.ai.cloudflare.com/v1/..."
+                placeholder="http://localhost:8081/proxy/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/openai"
                 required
+                readOnly // Make it read-only since we're auto-setting it
               />
             </div>
           )}

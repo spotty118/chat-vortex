@@ -23,19 +23,17 @@ export const sendCloudflareMessage = async (
   messages: ChatMessage[],
   signal?: AbortSignal
 ) => {
-  const gatewayUrl = localStorage.getItem('cloudflare_gateway_url');
-  if (!gatewayUrl) {
-    throw new APIError('Cloudflare AI Gateway URL not configured');
-  }
+  // Define the proxy server URL
+  const proxyUrl = 'http://localhost:8081/proxy/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/openai';
 
-  console.log('Sending message via Cloudflare AI Gateway...', { 
+  console.log('Sending message via Proxy to Cloudflare AI Gateway...', { 
     modelId, 
-    gatewayUrl: gatewayUrl.replace(/\/[^/]*$/, '/*'), // Log URL with ID masked
+    proxyUrl,
     messageCount: messages.length 
   });
   
   try {
-    const response = await fetch(gatewayUrl, {
+    const response = await fetch(proxyUrl, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
