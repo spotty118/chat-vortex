@@ -178,8 +178,7 @@ export const sendCohereMessage = async (
     signal,
     body: JSON.stringify({
       model: modelId,
-      prompt: messages[messages.length - 1].content,
-      max_tokens: 1000,
+      prompt: messages[messages.length - 1].content
     }),
   });
 

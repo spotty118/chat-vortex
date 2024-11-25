@@ -1,20 +1,53 @@
 import { APIError } from '../errors';
 import type { ChatMessage } from '../types';
 
+const PROXY_BASE = 'http://localhost:3001/api/cloudflare';
+const CLOUDFLARE_PATH = '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/openai';
+
 export const fetchCloudflareModels = async (apiKey: string) => {
-  // Cloudflare uses OpenAI's models, so we return them directly
-  return [
-    {
-      id: "gpt-4",
-      name: "GPT-4",
-      capabilities: ["chat", "code", "analysis"],
-    },
-    {
-      id: "gpt-3.5-turbo",
-      name: "GPT-3.5 Turbo",
-      capabilities: ["chat", "code"],
+  try {
+    const response = await fetch(`${PROXY_BASE}${CLOUDFLARE_PATH}/models`, {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+      },
+    });
+
+    if (!response.ok) {
+      throw new APIError(`Failed to fetch models: ${response.statusText}`);
     }
-  ];
+
+    const data = await response.json();
+    
+    // Filter for chat models and map to our format
+    const chatModels = data.data
+      .filter((model: any) => model.id.includes('gpt'))
+      .map((model: any) => ({
+        id: model.id,
+        name: model.id.split('-').map((word: string) => 
+          word.charAt(0).toUpperCase() + word.slice(1)
+        ).join(' '),
+        capabilities: ["chat", "code"],
+        ...(model.id.includes('gpt-4') && { capabilities: ["chat", "code", "analysis"] })
+      }));
+
+    return chatModels;
+  } catch (error) {
+    console.error('Error fetching Cloudflare models:', error);
+    // Fallback to default models if fetch fails
+    return [
+      {
+        id: "gpt-4",
+        name: "GPT-4",
+        capabilities: ["chat", "code", "analysis"],
+      },
+      {
+        id: "gpt-3.5-turbo",
+        name: "GPT-3.5 Turbo",
+        capabilities: ["chat", "code"],
+      }
+    ];
+  }
 };
 
 export const sendCloudflareMessage = async (
@@ -23,27 +56,23 @@ export const sendCloudflareMessage = async (
   messages: ChatMessage[],
   signal?: AbortSignal
 ) => {
-  // Define the proxy server URL
-  const proxyUrl = 'http://localhost:8081/proxy/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/openai';
-
-  console.log('Sending message via Proxy to Cloudflare AI Gateway...', { 
+  console.log('Sending message to Cloudflare AI Gateway...', { 
     modelId, 
-    proxyUrl,
     messageCount: messages.length 
   });
   
   try {
-    const response = await fetch(proxyUrl, {
+    const response = await fetch(`${PROXY_BASE}${CLOUDFLARE_PATH}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`
+        'Authorization': `Bearer ${apiKey}`,
       },
       signal,
       body: JSON.stringify({
         model: modelId,
         messages: messages.map(msg => ({
-          role: msg.role,
+          role: msg.role === 'user' ? 'user' : 'assistant',
           content: msg.content
         })),
         stream: false
@@ -52,29 +81,20 @@ export const sendCloudflareMessage = async (
 
     if (!response.ok) {
       const errorText = await response.text();
-      console.error('Cloudflare Gateway Error Response:', errorText);
-      
-      if (response.status === 403) {
-        throw new APIError('Access denied. Please check your API key and ensure CORS is enabled in your Cloudflare Workers settings.');
-      }
-      
+      console.error('Cloudflare API Error:', errorText);
       throw new APIError(`Failed to send message: ${response.statusText}`);
     }
 
     const data = await response.json();
-    console.log('Cloudflare Gateway Response:', {
-      status: response.status,
-      hasChoices: !!data.choices,
-      messageLength: data.choices?.[0]?.message?.content?.length
-    });
+    console.log('Cloudflare API Response:', JSON.stringify(data, null, 2));
 
-    if (!data.choices?.[0]?.message?.content) {
-      console.error('Invalid response format from Cloudflare:', data);
-      throw new APIError('Invalid response format from Cloudflare Gateway');
+    if (!data.choices?.[0]?.message) {
+      throw new APIError('Invalid response format from Cloudflare');
     }
 
     return {
       message: data.choices[0].message.content,
+      role: 'assistant',
       usage: data.usage || {
         prompt_tokens: 0,
         completion_tokens: 0,
@@ -83,9 +103,8 @@ export const sendCloudflareMessage = async (
     };
   } catch (error) {
     console.error('Error sending message via Cloudflare:', error);
-    if (error instanceof APIError) {
-      throw error;
-    }
-    throw new APIError('Failed to send message to Cloudflare Gateway. Please ensure CORS is enabled in your Workers settings.');
+    throw error instanceof APIError 
+      ? error 
+      : new APIError('Failed to send message to Cloudflare Gateway. Please ensure CORS is enabled in your Workers settings.');
   }
 };

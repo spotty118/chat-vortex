@@ -5,6 +5,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
 } from "@/components/ui/select";
 import {
   Tooltip,
@@ -15,7 +17,14 @@ import {
 
 interface ModelSelectorProps {
   selectedModel: string;
-  availableModels: any[];
+  availableModels: Array<{
+    id: string;
+    name?: string;
+    pricing?: {
+      prompt: number;
+      completion: number;
+    };
+  }>;
   onModelSelect: (modelId: string) => void;
 }
 
@@ -49,16 +58,32 @@ export const ModelSelector = ({
             <SelectValue placeholder="Choose a model" />
           </SelectTrigger>
           <SelectContent className="max-h-[300px] w-[300px] bg-white/98 backdrop-blur-sm border-neutral-200 shadow-lg divide-y divide-neutral-100">
-            {availableModels.map((model) => (
-              <SelectItem 
-                key={model.id} 
-                value={model.id}
-                className={`py-4 px-4 hover:bg-neutral-50 focus:bg-neutral-50 cursor-pointer ${selectedModel === model.id ? 'font-bold' : 'font-normal'}`}
-              >
-                <span className="text-[0.925rem] leading-snug text-neutral-900">
-                  {model.name || model.id}
-                </span>
-              </SelectItem>
+            {Object.entries(
+              availableModels.reduce((acc, model) => {
+                if (!model?.id) return acc;
+                const provider = model.id?.split('-')[0] || 'unknown';
+                return {
+                  ...acc,
+                  [provider]: [...(acc[provider] || []), model],
+                };
+              }, {} as Record<string, typeof availableModels>)
+            ).map(([provider, models]) => (
+              <SelectGroup key={provider}>
+                <SelectLabel className="px-4 py-2 text-xs font-medium text-neutral-500 uppercase">
+                  {provider}
+                </SelectLabel>
+                {models.map((model) => (
+                  <SelectItem 
+                    key={model.id} 
+                    value={model.id}
+                    className={`py-4 px-4 hover:bg-neutral-50 focus:bg-neutral-50 cursor-pointer ${selectedModel === model.id ? 'font-bold' : 'font-normal'}`}
+                  >
+                    <span className="text-[0.925rem] leading-snug text-neutral-900">
+                      {model.name || model.id}
+                    </span>
+                  </SelectItem>
+                ))}
+              </SelectGroup>
             ))}
           </SelectContent>
         </Select>

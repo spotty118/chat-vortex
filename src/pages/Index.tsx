@@ -16,9 +16,14 @@ const Index = () => {
     <div className="h-screen p-4">
       <ResizablePanelGroup direction="horizontal">
         {/* Left Panel - Provider List */}
-        <ResizablePanel defaultSize={25}>
+        <ResizablePanel 
+          defaultSize={20} 
+          minSize={15}
+          maxSize={30}
+          className="min-w-[250px]"
+        >
           <ScrollArea className="h-full">
-            <div className="space-y-4 pr-4">
+            <div className="space-y-2 pr-4">
               {providers.map((provider) => (
                 <ProviderCard
                   key={provider.id}

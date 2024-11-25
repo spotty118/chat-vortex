@@ -1,6 +1,5 @@
 import { APIError } from '../errors';
 import type { ChatMessage } from '../types';
-import { AIMetadata } from '../types/ai';
 
 export const fetchOpenRouterModels = async (apiKey: string) => {
   console.log('Fetching OpenRouter models...');
@@ -42,7 +41,6 @@ export const sendOpenRouterMessage = async (
   modelId: string,
   messages: ChatMessage[],
   signal?: AbortSignal,
-  settings?: AIMetadata
 ) => {
   console.log('Sending message to OpenRouter...', { modelId, messages });
   try {
@@ -63,12 +61,7 @@ export const sendOpenRouterMessage = async (
       },
       body: JSON.stringify({
         model: modelId,
-        messages: formattedMessages,
-        temperature: settings?.temperature || 0.7,
-        max_tokens: settings?.maxTokens || 2000,
-        top_p: settings?.topP || 1,
-        frequency_penalty: settings?.frequencyPenalty || 0,
-        presence_penalty: settings?.presencePenalty || 0
+        messages: formattedMessages
       }),
     });
 

@@ -8,14 +8,6 @@ export default defineConfig(({ mode }) => ({
   server: {
     host: "::",
     port: 8080,
-    proxy: {
-      '/proxy': {
-        target: 'https://gateway.ai.cloudflare.com',
-        changeOrigin: true,
-        secure: true,
-        rewrite: (path) => path.replace(/^\/proxy/, ''),
-      },
-    },
   },
   plugins: [
     react(),

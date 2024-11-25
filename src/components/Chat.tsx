@@ -8,9 +8,7 @@ import { useToast } from "@/components/ui/use-toast";
 import { ModelSelector } from "@/components/ModelSelector";
 import { MessageList } from "@/components/MessageList";
 import { MessageInput } from "@/components/MessageInput";
-import { AISettings } from "@/components/AISettings";
 import { TokenUsageDisplay } from "@/components/TokenUsageDisplay";
-import { useAISettings } from "@/hooks/useAISettings";
 import { fetchModels, sendMessage, APIError } from "@/lib/api";
 import { saveConversation, exportConversation } from "@/lib/conversation";
 import { MessageWithMetadata } from "@/lib/types/ai";
@@ -28,7 +26,6 @@ export const Chat = ({ provider }: ChatProps) => {
   const [availableModels, setAvailableModels] = useState<any[]>([]);
   const [controller, setController] = useState<AbortController | null>(null);
   const conversationId = useRef(nanoid());
-  const { settings, updateSettings } = useAISettings();
   const { toast } = useToast();
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -79,10 +76,7 @@ export const Chat = ({ provider }: ChatProps) => {
       role: "user",
       content: input,
       timestamp: Date.now(),
-      metadata: {
-        model: selectedModel,
-        ...settings
-      }
+      metadata: {}
     };
     
     setMessages(prev => [...prev, userMessage]);
@@ -93,13 +87,12 @@ export const Chat = ({ provider }: ChatProps) => {
     setController(newController);
 
     try {
-      console.log(`Sending message using model: ${selectedModel} with settings:`, settings);
+      console.log(`Sending message using model: ${selectedModel}`);
       const response = await sendMessage(
         provider, 
         selectedModel, 
         [...messages, userMessage],
-        newController.signal,
-        settings
+        newController.signal
       );
       
       const assistantMessage: MessageWithMetadata = {
@@ -107,10 +100,7 @@ export const Chat = ({ provider }: ChatProps) => {
         role: "assistant",
         content: response.message,
         timestamp: Date.now(),
-        metadata: {
-          model: selectedModel,
-          ...settings
-        },
+        metadata: {},
         usage: response.usage
       };
 
@@ -138,6 +128,25 @@ export const Chat = ({ provider }: ChatProps) => {
     }
   };
 
+  const handleExport = () => {
+    exportConversation({
+      id: conversationId.current,
+      provider: provider.id,
+      model: selectedModel,
+      messages,
+      createdAt: messages[0]?.timestamp || Date.now(),
+      updatedAt: Date.now(),
+    });
+  };
+
+  const handleStop = () => {
+    if (controller) {
+      controller.abort();
+      setIsLoading(false);
+      setController(null);
+    }
+  };
+
   const filteredMessages = searchQuery
     ? messages.filter(msg => 
         msg.content.toLowerCase().includes(searchQuery.toLowerCase())
@@ -153,67 +162,67 @@ export const Chat = ({ provider }: ChatProps) => {
   }, { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 });
 
   return (
-    <div className="flex flex-col h-full">
-      <div className="flex items-center justify-between mb-4">
-        <div className="flex items-center gap-4">
+    <div className="flex h-full flex-col space-y-4 p-4 md:p-8">
+      <div className="flex flex-col space-y-4 sm:flex-row sm:space-x-4 sm:space-y-0">
+        <div className="flex-1">
           <ModelSelector
-            selectedModel={selectedModel}
             availableModels={availableModels}
+            selectedModel={selectedModel}
             onModelSelect={setSelectedModel}
           />
-          <AISettings settings={settings} onUpdate={updateSettings} />
         </div>
-        <div className="flex items-center gap-2">
-          <div className="relative">
-            <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+        <div className="flex space-x-2">
+          <div className="relative flex-1 sm:w-64">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <Input
+              placeholder="Search messages..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search messages..."
-              className="pl-8 w-[200px]"
+              className="pl-8"
             />
           </div>
           <Button
             variant="outline"
             size="icon"
-            onClick={() => exportConversation({
-              id: conversationId.current,
-              provider: provider.id,
-              model: selectedModel,
-              messages,
-              createdAt: messages[0]?.timestamp || Date.now(),
-              updatedAt: Date.now(),
-            })}
+            onClick={handleExport}
             title="Export conversation"
           >
-            <Download className="w-4 h-4" />
+            <Download className="h-4 w-4" />
           </Button>
         </div>
       </div>
 
-      <MessageList messages={filteredMessages} />
-      <div ref={bottomRef} />
-
-      <div className="mt-4 border-t pt-4 space-y-4">
-        <TokenUsageDisplay usage={totalUsage} maxTokens={settings.maxTokens || 2000} />
-        <MessageInput
-          input={input}
-          setInput={setInput}
-          isLoading={isLoading}
-          selectedModel={selectedModel}
-          onSendMessage={handleSend}
-          onClearChat={() => {
-            setMessages([]);
-            conversationId.current = nanoid();
-          }}
-          onStopResponse={() => {
-            if (controller) {
-              controller.abort();
-              setIsLoading(false);
-              setController(null);
-            }
-          }}
-        />
+      <div className="relative flex-1 overflow-hidden rounded-lg border bg-background shadow">
+        <div className="absolute inset-0 flex flex-col overflow-hidden">
+          <div className="flex-1 overflow-y-auto p-4">
+            <MessageList
+              messages={filteredMessages}
+              isLoading={isLoading}
+              provider={provider}
+            />
+            <div ref={bottomRef} />
+          </div>
+          
+          <div className="border-t bg-background/95 p-4 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="mx-auto flex max-w-2xl flex-col gap-2">
+              <MessageInput
+                input={input}
+                setInput={setInput}
+                onSend={handleSend}
+                isLoading={isLoading}
+                onStop={handleStop}
+              />
+              <TokenUsageDisplay 
+                usage={{ 
+                  total_tokens: messages.reduce((sum, msg) => sum + (msg.tokens || 0), 0),
+                  prompt_tokens: messages.filter(m => m.role === 'user').reduce((sum, msg) => sum + (msg.tokens || 0), 0),
+                  completion_tokens: messages.filter(m => m.role === 'assistant').reduce((sum, msg) => sum + (msg.tokens || 0), 0)
+                }}
+                maxTokens={4096}  
+              />
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

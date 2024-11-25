@@ -6,16 +6,7 @@ export interface TokenUsage {
   total_tokens: number;
 }
 
-export interface AIMetadata {
-  model: string;
-  temperature?: number;
-  maxTokens?: number;
-  topP?: number;
-  frequencyPenalty?: number;
-  presencePenalty?: number;
-}
-
 export interface MessageWithMetadata extends ChatMessage {
-  metadata?: AIMetadata;
+  metadata?: Record<string, any>;
   usage?: TokenUsage;
 }

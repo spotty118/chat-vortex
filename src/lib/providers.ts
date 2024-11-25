@@ -26,7 +26,7 @@ export const providers: Provider[] = [
   {
     id: "anthropic",
     name: "Anthropic",
-    logo: "https://upload.wikimedia.org/wikipedia/commons/8/86/Anthropic_logo.svg",
+    logo: "https://avatars.githubusercontent.com/u/124916566?s=200&v=4",
     models: [
       {
         id: "claude-2",
@@ -70,7 +70,7 @@ export const providers: Provider[] = [
   {
     id: "mistral",
     name: "Mistral AI",
-    logo: "https://mistral.ai/favicon.ico",
+    logo: "https://mistral.ai/images/mistral-avatar.jpg",
     models: [
       {
         id: "mistral-small",
@@ -142,7 +142,7 @@ export const providers: Provider[] = [
   {
     id: "cloudflare",
     name: "Cloudflare AI Gateway",
-    logo: "https://developers.cloudflare.com/favicon.ico",
+    logo: "https://avatars.githubusercontent.com/u/314135?s=200&v=4",
     models: [
       {
         id: "gpt-4",

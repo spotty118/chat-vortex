@@ -37,8 +37,8 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
 
   useEffect(() => {
     if (provider && provider.id === 'cloudflare') {
-      // Automatically set the gatewayUrl to the proxy server for Cloudflare
-      setGatewayUrl('http://localhost:8081/proxy/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/openai');
+      // Set the direct Cloudflare gateway URL
+      setGatewayUrl('https://gateway.ai.cloudflare.com/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/openai');
     }
   }, [provider]);
 
@@ -113,21 +113,23 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
       <DialogContent className="bg-white/95 backdrop-blur-sm border-neutral-200">
         <DialogHeader>
           <DialogTitle>Configure {provider.name}</DialogTitle>
-          <DialogDescription className="space-y-2">
-            <p>Enter your API key to start using {provider.name} models.</p>
-            {apiKeyLink && (
-              <p>
-                <a 
-                  href={apiKeyLink}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-primary hover:underline inline-flex items-center gap-1"
-                >
-                  Get your {provider.name} API key here
-                  <ExternalLink className="h-3 w-3" />
-                </a>
-              </p>
-            )}
+          <DialogDescription asChild>
+            <div className="space-y-2">
+              <div>Enter your API key to start using {provider.name} models.</div>
+              {apiKeyLink && (
+                <div>
+                  <a 
+                    href={apiKeyLink}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-primary hover:underline inline-flex items-center gap-1"
+                  >
+                    Get your {provider.name} API key here
+                    <ExternalLink className="h-3 w-3" />
+                  </a>
+                </div>
+              )}
+            </div>
           </DialogDescription>
         </DialogHeader>
         <form onSubmit={handleSubmit} className="space-y-4 py-4">
@@ -140,6 +142,7 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
               onChange={(e) => setApiKey(e.target.value)}
               placeholder="Enter your API key"
               required
+              autoComplete="new-password"
             />
           </div>
           {provider.id === 'cloudflare' && (

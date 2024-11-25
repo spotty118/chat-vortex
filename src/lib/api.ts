@@ -1,5 +1,4 @@
 import { Provider } from "./types";
-import { AIMetadata } from "./types/ai";
 import { fetchGoogleModels, sendGoogleMessage } from "./api/googleApi";
 import { fetchOpenRouterModels, sendOpenRouterMessage } from "./api/openRouterApi";
 import { fetchCloudflareModels, sendCloudflareMessage } from "./api/cloudflareApi";
@@ -14,6 +13,7 @@ import {
   sendMistralMessage,
   sendCohereMessage
 } from "./api/providerApis";
+import type { ChatMessage } from "./types";
 
 export { APIError };
 
@@ -53,23 +53,22 @@ export const fetchModels = async (provider: Provider): Promise<any> => {
 export const sendMessage = async (
   provider: Provider,
   modelId: string,
-  messages: any[],
+  messages: ChatMessage[],
   signal?: AbortSignal,
-  settings?: AIMetadata
 ): Promise<any> => {
   const apiKey = localStorage.getItem(`${provider.id}_api_key`);
   if (!apiKey) {
     throw new APIError("API key not found. Please configure the provider first.");
   }
 
-  console.log(`Sending message to ${provider.name} using model ${modelId} with settings:`, settings);
+  console.log(`Sending message to ${provider.name} using model ${modelId}`);
 
   try {
     switch (provider.id) {
       case "google":
         return sendGoogleMessage(apiKey, modelId, messages);
       case "openrouter":
-        return sendOpenRouterMessage(apiKey, modelId, messages, signal, settings);
+        return sendOpenRouterMessage(apiKey, modelId, messages, signal);
       case "openai":
         return sendOpenAIMessage(apiKey, modelId, messages, signal);
       case "anthropic":

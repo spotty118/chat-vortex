@@ -85,6 +85,5 @@
   "main": "eslint.config.js",
   "keywords": [],
   "author": "",
-  "license": "ISC",
-  "proxy": "https://gateway.ai.cloudflare.com"
+  "license": "ISC"
 }
