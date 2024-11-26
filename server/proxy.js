@@ -15,7 +15,10 @@ const corsOptions = {
   optionsSuccessStatus: 204
 };
 
+// Apply CORS middleware
 app.use(cors(corsOptions));
+
+// Handle preflight requests
 app.options('*', cors(corsOptions));
 
 // Proxy middleware configuration for Google Provider via Cloudflare
@@ -27,21 +30,23 @@ const googleCloudflareProxy = createProxyMiddleware({
     return path.replace('/api/google', '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/google-ai-studio');
   },
   onProxyReq: function (proxyReq, req, res) {
+    // Copy API key header
     if (req.headers['x-goog-api-key']) {
       proxyReq.setHeader('x-goog-api-key', req.headers['x-goog-api-key']);
     }
+    
+    // Ensure content type is set
     proxyReq.setHeader('Content-Type', 'application/json');
     
-    console.log('Proxying to:', proxyReq.path);
+    console.log('Proxying request to:', proxyReq.path);
   },
   onProxyRes: function (proxyRes, req, res) {
-    // Ensure CORS headers are set correctly
+    // Set CORS headers on the response
     proxyRes.headers['Access-Control-Allow-Origin'] = req.headers.origin || 'http://localhost:8081';
     proxyRes.headers['Access-Control-Allow-Credentials'] = 'true';
     proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
     proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, x-goog-api-key';
     
-    // Log response headers for debugging
     console.log('Response headers:', proxyRes.headers);
   }
 });
@@ -49,7 +54,7 @@ const googleCloudflareProxy = createProxyMiddleware({
 // Mount the proxy middleware
 app.use('/api/google', googleCloudflareProxy);
 
-// Error handling
+// Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Proxy Error:', err);
   res.status(500).json({ error: 'Proxy Error', message: err.message });
