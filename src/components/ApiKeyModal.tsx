@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { Provider } from "@/lib/types";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +11,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Provider } from "@/lib/types";
 import { useToast } from "@/components/ui/use-toast";
 import { fetchModels } from "@/lib/api";
 import { ExternalLink } from "lucide-react";
@@ -58,7 +58,7 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
     setIsSaving(true);
 
     try {
-      localStorage.setItem('apiKey', apiKey.trim());
+      localStorage.setItem(`${provider.id}-apiKey`, apiKey.trim());
       console.log(`Saved API key for provider: ${provider.id}`);
       
       const models = await fetchModels(provider);
