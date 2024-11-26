@@ -5,12 +5,12 @@ export const config = {
   runtime: 'edge',
 };
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
 export default async function POST(req) {
   const { messages } = await req.json();
+
+  const openai = new OpenAI({
+    apiKey: req.headers.get('Authorization')?.split('Bearer ')[1],
+  });
 
   const response = await openai.chat.completions.create({
     model: 'gpt-3.5-turbo',

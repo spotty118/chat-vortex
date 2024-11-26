@@ -4,9 +4,12 @@ import { Textarea } from '@/components/ui/textarea';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Card } from '@/components/ui/card';
 
-export function AIChat() {
+export function AIChat({ apiKey }) {
   const { messages, input, handleInputChange, handleSubmit } = useChat({
     api: '/api/chat',
+    headers: {
+      'Authorization': `Bearer ${apiKey}`
+    }
   });
 
   return (

@@ -1,4 +1,4 @@
-import { createAI, useAIState, useActions } from 'ai/rsc';
+import { createAI } from 'ai/rsc';
 import { Provider } from './types';
 import type { ChatMessage } from './types';
 
@@ -14,52 +14,7 @@ export interface AIActions {
   setProvider: (provider: Provider) => void;
   setModel: (modelId: string) => void;
   submitMessage: (message: string) => Promise<void>;
-  input?: string;
 }
-
-const setProvider = (provider: Provider) => {
-  return {
-    provider,
-  };
-};
-
-const setModel = (modelId: string) => {
-  // Remove direct modification of initialAIState
-  return {
-    modelId,
-  };
-};
-
-const fetchAIResponse = async (message: string) => {
-  const [currentState] = useAIState();
-
-  const response = await fetch('/api/chat', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ 
-      message, 
-      provider: currentState.provider,
-      modelId: currentState.modelId 
-    }),
-  });
-
-  return await response.json();
-};
-
-const submitMessage = async (message: string) => {
-  const [currentState, setState] = useAIState();
-  const responseData = await fetchAIResponse(message);
-
-  setState({
-    messages: [
-      ...currentState.messages,
-      { role: 'user', content: message },
-      { role: 'assistant', content: responseData.message }
-    ]
-  });
-};
 
 const initialAIState: AIState = {
   provider: null,
@@ -68,17 +23,45 @@ const initialAIState: AIState = {
   isLoading: false,
 };
 
-const actions: AIActions = {
-  setProvider,
-  setModel,
-  submitMessage,
-};
-
-export const AI = createAI<AIState, AIActions>({
-  initialAIState: initialAIState,
+export const AI = createAI({
   actions: {
-    setProvider,
-    setModel,
-    submitMessage,
-  }
+    setProvider: async (provider: Provider) => {
+      return { provider };
+    },
+    setModel: async (modelId: string) => {
+      return { modelId };
+    },
+    submitMessage: async (message: string, { state, dispatch }) => {
+      dispatch({ isLoading: true });
+      
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            messages: [...state.messages, { role: 'user', content: message }],
+            provider: state.provider,
+            modelId: state.modelId
+          }),
+        });
+
+        const data = await response.json();
+        
+        return {
+          messages: [
+            ...state.messages,
+            { role: 'user', content: message },
+            { role: 'assistant', content: data.message }
+          ],
+          isLoading: false
+        };
+      } catch (error) {
+        console.error('Error submitting message:', error);
+        return { isLoading: false };
+      }
+    },
+  },
+  initialAIState: initialAIState,
 });
