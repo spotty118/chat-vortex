@@ -5,7 +5,7 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const app = express();
 const PORT = 8080;
 
-// Configure CORS
+// Configure CORS with specific origins
 const corsOptions = {
   origin: ['http://localhost:8081', 'https://preview--chat-vortex.lovable.app'],
   methods: ['GET', 'POST', 'OPTIONS'],
@@ -35,13 +35,22 @@ const googleCloudflareProxy = createProxyMiddleware({
       proxyReq.setHeader('x-goog-api-key', req.headers['x-goog-api-key']);
     }
     
+    // Remove credentials header to prevent CORS issues
+    proxyReq.removeHeader('cookie');
+    
     // Ensure content type is set
     proxyReq.setHeader('Content-Type', 'application/json');
     
     console.log('Proxying request to:', proxyReq.path);
   },
   onProxyRes: function (proxyRes, req, res) {
-    // Set CORS headers on the response
+    // Remove any existing CORS headers from the response
+    delete proxyRes.headers['access-control-allow-origin'];
+    delete proxyRes.headers['access-control-allow-credentials'];
+    delete proxyRes.headers['access-control-allow-methods'];
+    delete proxyRes.headers['access-control-allow-headers'];
+
+    // Set new CORS headers on the response
     proxyRes.headers['Access-Control-Allow-Origin'] = req.headers.origin || 'http://localhost:8081';
     proxyRes.headers['Access-Control-Allow-Credentials'] = 'true';
     proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';

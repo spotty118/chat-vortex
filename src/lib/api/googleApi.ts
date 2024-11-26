@@ -39,8 +39,7 @@ export const fetchGoogleModels = async (apiKey: string, customApiUrl?: string) =
       headers: {
         'Content-Type': 'application/json',
         'x-goog-api-key': apiKey
-      },
-      credentials: 'include'
+      }
     });
 
     if (!response.ok) {
@@ -59,8 +58,8 @@ export const fetchGoogleModels = async (apiKey: string, customApiUrl?: string) =
         return modelName.includes('gemini');
       })
       .map(model => ({
-        id: model.name,  // Full model name (e.g., "models/gemini-1.5-pro")
-        baseModelId: model.baseModelId, // Base model ID for generation
+        id: model.name,
+        baseModelId: model.baseModelId,
         name: model.displayName || model.baseModelId,
         description: model.description,
         capabilities: ["chat", "code"],
@@ -75,7 +74,6 @@ export const fetchGoogleModels = async (apiKey: string, customApiUrl?: string) =
     return transformedModels;
   } catch (error) {
     console.error('Error fetching Google AI models:', error);
-    // Return default models as fallback
     return DEFAULT_MODELS;
   }
 };
@@ -95,13 +93,11 @@ export const sendGoogleMessage = async (
     const baseUrl = customApiUrl || API_BASE;
     const baseModelId = modelId.includes('models/') ? modelId.split('/')[1] : modelId;
 
-    // Format the messages for the API
     const formattedMessages = messages.map(msg => ({
       role: msg.role === 'assistant' ? 'model' : msg.role,
       parts: [{ text: msg.content.toString() }]
     }));
 
-    // Prepare the request body
     const requestBody = {
       contents: formattedMessages,
       generationConfig: {
@@ -112,7 +108,6 @@ export const sendGoogleMessage = async (
       }
     };
 
-    // Send request through our proxy
     const response = await fetch(`${baseUrl}/v1beta/models/${baseModelId}:generateContent`, {
       method: 'POST',
       headers: {
@@ -120,7 +115,6 @@ export const sendGoogleMessage = async (
         'x-goog-api-key': apiKey
       },
       body: JSON.stringify(requestBody),
-      credentials: 'include',
       signal
     });
 
@@ -154,9 +148,7 @@ export const sendGoogleMessage = async (
 export class GoogleClient {
   constructor(private apiKey: string) {}
 
-  // Placeholder method
   public async exampleMethod() {
     console.log('Example method called');
-    // Implement functionality here
   }
 }
