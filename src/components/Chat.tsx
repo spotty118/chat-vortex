@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback } from "react";
 import { nanoid } from "nanoid";
 import { Search, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -87,49 +87,7 @@ export const Chat = ({ provider, attachments }: ChatProps) => {
     }
   }, [messages.length, provider.id, selectedModel]);
 
-  useEffect(() => {
-    if (attachments && attachments.length > 0) {
-      // Check if we've already processed these attachments
-      const newAttachments = attachments.filter(file => 
-        !processedAttachments.includes(file.name)
-      );
-
-      if (newAttachments.length === 0) return;
-
-      const currentModel = provider.models.find(m => m.id === selectedModel);
-      if (!currentModel?.capabilities.includes("attachments")) {
-        toast({
-          title: "Model doesn't support attachments",
-          description: "Please select a model that supports attachments to use this feature.",
-          variant: "destructive",
-        });
-        return;
-      }
-
-      const attachmentMessages = newAttachments.map(file => ({
-        id: nanoid(),
-        role: "user" as const,
-        content: `[Attached file: ${file.name}]`,
-        timestamp: Date.now(),
-        attachment: file
-      }));
-      
-      setMessages(prev => [...prev, ...attachmentMessages]);
-      setProcessedAttachments(prev => [...prev, ...newAttachments.map(file => file.name)]);
-    }
-  }, [attachments, provider.models, selectedModel]);
-
-  const clearChat = () => {
-    setMessages([]);
-    setProcessedAttachments([]);
-    conversationId.current = nanoid();
-    toast({
-      title: "Chat cleared",
-      description: "The conversation has been reset.",
-    });
-  };
-
-  const truncateMessages = (msgs: MessageWithMetadata[]): MessageWithMetadata[] => {
+  const truncateMessages = useCallback((msgs: MessageWithMetadata[]): MessageWithMetadata[] => {
     if (msgs.length <= MAX_MESSAGES) return msgs;
 
     // Keep system messages and last MAX_MESSAGES messages
@@ -138,9 +96,9 @@ export const Chat = ({ provider, attachments }: ChatProps) => {
     const recentMessages = nonSystemMessages.slice(-MAX_MESSAGES);
 
     return [...systemMessages, ...recentMessages];
-  };
+  }, [MAX_MESSAGES]);
 
-  const getContextMessages = (msgs: MessageWithMetadata[]): MessageWithMetadata[] => {
+  const getContextMessages = useCallback((msgs: MessageWithMetadata[]): MessageWithMetadata[] => {
     let totalTokens = 0;
     const contextMessages: MessageWithMetadata[] = [];
     
@@ -166,7 +124,50 @@ export const Chat = ({ provider, attachments }: ChatProps) => {
     }
     
     return contextMessages;
-  };
+  }, [MAX_TOKENS]);
+
+  // Memoize processed messages
+  const processedMessages = useMemo(() => {
+    const truncated = truncateMessages(messages);
+    return getContextMessages(truncated);
+  }, [messages, truncateMessages, getContextMessages]);
+
+  const processAttachments = useCallback((files: File[]) => {
+    if (!files.length) return;
+
+    const currentModel = provider.models.find(m => m.id === selectedModel);
+    if (!currentModel?.capabilities.includes("attachments")) {
+      toast({
+        title: "Model doesn't support attachments",
+        description: "Please select a model that supports attachments to use this feature.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const newAttachments = files.filter(file => 
+      !processedAttachments.includes(file.name)
+    );
+
+    if (newAttachments.length === 0) return;
+
+    const attachmentMessages = newAttachments.map(file => ({
+      id: nanoid(),
+      role: "user" as const,
+      content: `[Attached file: ${file.name}]`,
+      timestamp: Date.now(),
+      attachment: file
+    }));
+    
+    setMessages(prev => [...prev, ...attachmentMessages]);
+    setProcessedAttachments(prev => [...prev, ...newAttachments.map(file => file.name)]);
+  }, [provider.models, selectedModel, processedAttachments, toast]);
+
+  useEffect(() => {
+    if (attachments?.length) {
+      processAttachments(attachments);
+    }
+  }, [attachments, processAttachments]);
 
   const handleToolCall = async (toolCall: any) => {
     try {
@@ -305,6 +306,16 @@ export const Chat = ({ provider, attachments }: ChatProps) => {
     };
   }, { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 });
 
+  const clearChat = () => {
+    setMessages([]);
+    setProcessedAttachments([]);
+    conversationId.current = nanoid();
+    toast({
+      title: "Chat cleared",
+      description: "The conversation has been reset.",
+    });
+  };
+
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
@@ -370,7 +381,7 @@ export const Chat = ({ provider, attachments }: ChatProps) => {
             ) : (
               <div className="space-y-6">
                 <MessageList
-                  messages={truncateMessages(filteredMessages)}
+                  messages={processedMessages}
                   isLoading={isLoading}
                   provider={provider}
                 />

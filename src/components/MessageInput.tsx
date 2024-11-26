@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Loader2, Send, StopCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
+import debounce from "lodash/debounce";
 
 interface MessageInputProps {
   input: string;
@@ -29,11 +30,21 @@ export const MessageInput = ({
     }
   };
 
-  const handleInput = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    const lineCount = e.target.value.split("\n").length;
-    setRows(Math.min(lineCount, 5));
-    setInput(e.target.value);
-  };
+  const handleInput = useMemo(
+    () =>
+      debounce((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+        const lineCount = e.target.value.split("\n").length;
+        setRows(Math.min(lineCount, 5));
+        setInput(e.target.value);
+      }, 100),
+    [setInput]
+  );
+
+  useEffect(() => {
+    return () => {
+      handleInput.cancel();
+    };
+  }, [handleInput]);
 
   return (
     <div className="relative flex items-center">
