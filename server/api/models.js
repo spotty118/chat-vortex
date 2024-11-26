@@ -10,6 +10,12 @@ const corsHeaders = {
 
 const GATEWAY_BASE = 'https://gateway.ai.cloudflare.com/v1/fe45775498a97cb07c10d3f0d79cc2f0/big';
 
+const PROVIDER_ENDPOINTS = {
+  google: `${GATEWAY_BASE}/google-ai-studio/v1beta/models`,
+  cloudflare: `${GATEWAY_BASE}/cloudflare/@cf/meta/llama-2-7b-chat-int8`,
+  openai: `${GATEWAY_BASE}/openai/models`,
+};
+
 export default async function handler(req) {
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
@@ -27,21 +33,15 @@ export default async function handler(req) {
   }
 
   try {
-    let gatewayUrl;
-    
-    // Handle different provider endpoints
-    if (provider === 'google') {
-      gatewayUrl = `${GATEWAY_BASE}/google-ai-studio/v1beta/models`;
-    } else if (provider === 'openai') {
-      gatewayUrl = `${GATEWAY_BASE}/openai/models`;
-    } else {
+    const gatewayUrl = PROVIDER_ENDPOINTS[provider];
+    if (!gatewayUrl) {
       return new Response(`Unsupported provider: ${provider}`, {
         status: 400,
         headers: corsHeaders
       });
     }
 
-    // Forward the request to Cloudflare
+    // Forward the request to Cloudflare Gateway
     const response = await fetch(gatewayUrl, {
       method: req.method,
       headers: {
@@ -52,6 +52,21 @@ export default async function handler(req) {
     });
 
     const data = await response.json();
+
+    // For Cloudflare provider, format the response to match the expected structure
+    if (provider === 'cloudflare') {
+      const formattedData = {
+        models: [{
+          id: 'llama-2-7b-chat-int8',
+          name: 'Llama 2 7B Chat (INT8)',
+          provider: 'cloudflare'
+        }]
+      };
+      return new Response(JSON.stringify(formattedData), {
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+        status: response.status,
+      });
+    }
 
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
