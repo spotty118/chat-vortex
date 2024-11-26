@@ -31,21 +31,8 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
   onClose: () => void;
 }) => {
   const [apiKey, setApiKey] = useState("");
-  const [gatewayUrl, setGatewayUrl] = useState("");
   const [isSaving, setIsSaving] = useState(false);
   const { toast } = useToast();
-
-  useEffect(() => {
-    if (provider) {
-      if (provider.id === 'cloudflare') {
-        // Set the direct Cloudflare gateway URL
-        setGatewayUrl('https://gateway.ai.cloudflare.com/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/openai');
-      } else if (provider.id === 'google') {
-        // Set the Google AI Studio gateway URL
-        setGatewayUrl('https://gateway.ai.cloudflare.com/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/google-ai-studio');
-      }
-    }
-  }, [provider]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,15 +41,6 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
       toast({
         title: "Error",
         description: "Please enter an API key",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    if ((provider?.id === 'cloudflare' || provider?.id === 'google') && !gatewayUrl.trim()) {
-      toast({
-        title: "Error",
-        description: `Please enter your ${provider.id} AI Gateway URL`,
         variant: "destructive",
       });
       return;
@@ -80,10 +58,7 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
     setIsSaving(true);
 
     try {
-      localStorage.setItem(`${provider.id}_api_key`, apiKey.trim());
-      if (provider.id === 'cloudflare' || provider.id === 'google') {
-        localStorage.setItem(`${provider.id}_gateway_url`, gatewayUrl.trim());
-      }
+      localStorage.setItem('apiKey', apiKey.trim());
       console.log(`Saved API key for provider: ${provider.id}`);
       
       const models = await fetchModels(provider);
@@ -99,7 +74,7 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
       console.error("Error saving API key or fetching models:", error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "An error occurred",
+        description: error instanceof Error ? error.message : "Failed to save API key or fetch models",
         variant: "destructive",
       });
     } finally {
@@ -150,20 +125,6 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
               autoComplete="new-password"
             />
           </div>
-          {(provider.id === 'cloudflare' || provider.id === 'google') && (
-            <div className="space-y-2">
-              <Label htmlFor="gatewayUrl">Gateway URL</Label>
-              <Input
-                id="gatewayUrl"
-                type="text"
-                value={gatewayUrl}
-                onChange={(e) => setGatewayUrl(e.target.value)}
-                placeholder={provider.id === 'cloudflare' ? 'http://localhost:8081/proxy/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/openai' : 'http://localhost:8081/proxy/v1/google-gateway-url'}
-                required
-                readOnly={provider.id === 'cloudflare'} // Make it read-only since we're auto-setting it
-              />
-            </div>
-          )}
           <DialogFooter>
             <Button type="button" variant="outline" onClick={onClose} disabled={isSaving}>
               Cancel
