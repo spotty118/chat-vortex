@@ -50,8 +50,16 @@ const googleCloudflareProxy = createProxyMiddleware({
     delete proxyRes.headers['access-control-allow-methods'];
     delete proxyRes.headers['access-control-allow-headers'];
 
+    // Get the origin from the request headers
+    const origin = req.headers.origin;
+    
     // Set new CORS headers on the response
-    proxyRes.headers['Access-Control-Allow-Origin'] = req.headers.origin || 'https://preview--chat-vortex.lovable.app';
+    if (origin && (origin === 'http://localhost:8081' || origin === 'https://preview--chat-vortex.lovable.app')) {
+      proxyRes.headers['Access-Control-Allow-Origin'] = origin;
+    } else {
+      proxyRes.headers['Access-Control-Allow-Origin'] = 'https://preview--chat-vortex.lovable.app';
+    }
+    
     proxyRes.headers['Access-Control-Allow-Credentials'] = 'true';
     proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
     proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, x-goog-api-key';
