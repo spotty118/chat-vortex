@@ -91,64 +91,124 @@ export const MessageList = memo(({ messages, isLoading, provider }: MessageListP
   const lastMessageRef = useRef<HTMLDivElement>(null);
   const rafRef = useRef<number>();
   const visibleMessages = useRef(new Set<string>());
+  const isScrolling = useRef(false);
+  const measurementsRef = useRef<{
+    listRect?: DOMRect;
+    viewportHeight?: number;
+    lastScrollTop?: number;
+  }>({});
   
-  // Memoize the update function
+  // Optimize update function with throttling
   const debouncedUpdate = useMemo(() => {
     let timeout: NodeJS.Timeout;
+    let lastRun = 0;
+    const THROTTLE_MS = 150; // Increased from 100ms to 150ms
+    
     return () => {
-      if (timeout) clearTimeout(timeout);
-      timeout = setTimeout(() => {
-        if (rafRef.current) cancelAnimationFrame(rafRef.current);
-        rafRef.current = requestAnimationFrame(() => {
-          updateVisibleMessages();
-        });
-      }, 100); // 100ms debounce
+      const now = Date.now();
+      if (now - lastRun < THROTTLE_MS) {
+        // Skip if called too soon
+        if (timeout) clearTimeout(timeout);
+        timeout = setTimeout(() => {
+          lastRun = now;
+          if (rafRef.current) cancelAnimationFrame(rafRef.current);
+          rafRef.current = requestAnimationFrame(updateVisibleMessages);
+        }, THROTTLE_MS);
+        return;
+      }
+      
+      lastRun = now;
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      rafRef.current = requestAnimationFrame(updateVisibleMessages);
     };
   }, []);
 
   const updateVisibleMessages = useCallback(() => {
-    if (!listRef.current) return;
+    if (!listRef.current || !isScrolling.current) return;
 
-    const listRect = listRef.current.getBoundingClientRect();
-    const buffer = window.innerHeight; // One viewport height buffer
+    const scrollTop = listRef.current.scrollTop;
+    const lastScrollTop = measurementsRef.current.lastScrollTop;
+    
+    // Skip if scroll position hasn't changed significantly
+    if (lastScrollTop !== undefined && Math.abs(scrollTop - lastScrollTop) < 5) {
+      return;
+    }
+    
+    measurementsRef.current.lastScrollTop = scrollTop;
+    
+    // Only measure layout properties if they're not cached or if resize occurred
+    if (!measurementsRef.current.listRect || !measurementsRef.current.viewportHeight) {
+      measurementsRef.current.listRect = listRef.current.getBoundingClientRect();
+      measurementsRef.current.viewportHeight = window.innerHeight;
+    }
+    
+    const { listRect } = measurementsRef.current;
+    const buffer = window.innerHeight / 2; // Reduced buffer size to half viewport
     const updatedVisibleMessages = new Set<string>();
 
-    // Batch DOM reads
-    const messageRects = messages.map(message => ({
-      id: message.id,
-      element: document.getElementById(`message-${message.id}`),
-    }));
-
-    // Batch DOM operations
-    messageRects.forEach(({ id, element }) => {
-      if (!element) return;
+    // Use more efficient querySelector instead of getElementById
+    const messageElements = listRef.current.querySelectorAll('[id^="message-"]');
+    
+    // Use single getBoundingClientRect call per batch of elements
+    for (let i = 0; i < messageElements.length; i++) {
+      const element = messageElements[i] as HTMLElement;
+      const id = element.id.replace('message-', '');
       const elementRect = element.getBoundingClientRect();
+      
       if (
         elementRect.top >= listRect.top - buffer &&
         elementRect.bottom <= listRect.bottom + buffer
       ) {
         updatedVisibleMessages.add(id);
       }
-    });
+    }
 
     visibleMessages.current = updatedVisibleMessages;
-  }, [messages]);
+  }, []);
+
+  // Handle scroll start/end detection
+  const handleScrollStart = useCallback(() => {
+    isScrolling.current = true;
+    debouncedUpdate();
+  }, [debouncedUpdate]);
+
+  const handleScrollEnd = useCallback(() => {
+    isScrolling.current = false;
+    // Clear measurements cache on scroll end
+    measurementsRef.current = {};
+  }, []);
 
   useEffect(() => {
     const listElement = listRef.current;
     if (!listElement) return;
 
-    const observer = new ResizeObserver(debouncedUpdate);
-    observer.observe(listElement);
+    let scrollTimeout: NodeJS.Timeout;
+    const handleScroll = () => {
+      handleScrollStart();
+      // Reset scroll end timer
+      if (scrollTimeout) clearTimeout(scrollTimeout);
+      scrollTimeout = setTimeout(handleScrollEnd, 150);
+    };
 
-    listElement.addEventListener('scroll', debouncedUpdate, { passive: true });
+    // Only observe size changes, not position
+    const observer = new ResizeObserver(() => {
+      // Clear cached measurements on resize
+      measurementsRef.current = {};
+      if (isScrolling.current) {
+        debouncedUpdate();
+      }
+    });
+    
+    observer.observe(listElement);
+    listElement.addEventListener('scroll', handleScroll, { passive: true });
 
     return () => {
       observer.disconnect();
-      listElement.removeEventListener('scroll', debouncedUpdate);
+      listElement.removeEventListener('scroll', handleScroll);
       if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (scrollTimeout) clearTimeout(scrollTimeout);
     };
-  }, [debouncedUpdate]);
+  }, [debouncedUpdate, handleScrollStart, handleScrollEnd]);
 
   useEffect(() => {
     if (lastMessageRef.current) {
