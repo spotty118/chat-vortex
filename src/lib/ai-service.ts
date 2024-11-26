@@ -1,19 +1,19 @@
-import { createAI } from 'ai/rsc';
+import { Message } from 'ai';
 import { Provider } from './types';
-import type { ChatMessage } from './types';
 
 export type AIState = {
   provider: Provider | null;
   modelId: string | null;
-  messages: ChatMessage[];
+  messages: Message[];
   isLoading: boolean;
   input?: string;
+  apiKey?: string;
 };
 
 export interface AIActions {
   setProvider: (provider: Provider) => void;
   setModel: (modelId: string) => void;
-  submitMessage: (message: string) => Promise<void>;
+  setApiKey: (apiKey: string) => void;
 }
 
 const initialAIState: AIState = {
@@ -21,47 +21,34 @@ const initialAIState: AIState = {
   modelId: null,
   messages: [],
   isLoading: false,
+  apiKey: undefined
 };
 
-export const AI = createAI({
-  actions: {
-    setProvider: async (provider: Provider) => {
-      return { provider };
-    },
-    setModel: async (modelId: string) => {
-      return { modelId };
-    },
-    submitMessage: async (message: string, { state, dispatch }) => {
-      dispatch({ isLoading: true });
-      
-      try {
-        const response = await fetch('/api/chat', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            messages: [...state.messages, { role: 'user', content: message }],
-            provider: state.provider,
-            modelId: state.modelId
-          }),
-        });
+export const createAIService = () => {
+  let state = { ...initialAIState };
 
-        const data = await response.json();
-        
-        return {
-          messages: [
-            ...state.messages,
-            { role: 'user', content: message },
-            { role: 'assistant', content: data.message }
-          ],
-          isLoading: false
-        };
-      } catch (error) {
-        console.error('Error submitting message:', error);
-        return { isLoading: false };
+  const getState = () => state;
+  
+  const setState = (newState: Partial<AIState>) => {
+    state = { ...state, ...newState };
+    return state;
+  };
+
+  return {
+    getState,
+    setState,
+    actions: {
+      setProvider: (provider: Provider) => {
+        return setState({ provider });
+      },
+      setModel: (modelId: string) => {
+        return setState({ modelId });
+      },
+      setApiKey: (apiKey: string) => {
+        return setState({ apiKey });
       }
-    },
-  },
-  initialAIState: initialAIState,
-});
+    }
+  };
+};
+
+export const aiService = createAIService();
