@@ -3,77 +3,53 @@ const cors = require('cors');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const app = express();
+const PORT = 8080;
 
-// Enable CORS for your React app
-app.use(cors({
-  origin: 'http://localhost:8080',
+const corsOptions = {
+  origin: 'http://localhost:8081',
+  methods: ['GET', 'POST', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-goog-api-key'],
   credentials: true,
-}));
+  preflightContinue: false,
+  optionsSuccessStatus: 204
+};
 
-// Proxy middleware configuration for Google AI
-const googleAIProxy = createProxyMiddleware({
-  target: 'https://generativelanguage.googleapis.com',
-  changeOrigin: true,
-  pathRewrite: {
-    '^/api/google': '', 
-  },
-  onProxyReq: function (proxyReq, req, res) {
-    // Log the outgoing request
-    console.log('Google AI Request:', {
-      method: proxyReq.method,
-      path: proxyReq.path,
-      headers: proxyReq.getHeaders()
-    });
-  },
-  onProxyRes: function (proxyRes, req, res) {
-    proxyRes.headers['Access-Control-Allow-Origin'] = 'http://localhost:8080';
-    // Log the response status
-    console.log('Google AI Response:', {
-      status: proxyRes.statusCode,
-      headers: proxyRes.headers
-    });
-  },
-  onError: function (err, req, res) {
-    console.error('Google AI Proxy Error:', err);
-    res.status(500).send('Proxy Error: ' + err.message);
-  },
-});
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
-// Proxy middleware configuration for Cloudflare
-const cloudflareProxy = createProxyMiddleware({
+// Proxy middleware configuration for Google Provider via Cloudflare
+const googleCloudflareProxy = createProxyMiddleware({
   target: 'https://gateway.ai.cloudflare.com',
   changeOrigin: true,
-  pathRewrite: {
-    '^/api/cloudflare': '', 
+  secure: true,
+  pathRewrite: (path) => {
+    return path.replace('/api/google', '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/google-ai-studio');
   },
   onProxyReq: function (proxyReq, req, res) {
-    // Log the outgoing request
-    console.log('Cloudflare Request:', {
-      method: proxyReq.method,
-      path: proxyReq.path,
-      headers: proxyReq.getHeaders()
-    });
+    if (req.headers['x-goog-api-key']) {
+      proxyReq.setHeader('x-goog-api-key', req.headers['x-goog-api-key']);
+    }
+    proxyReq.setHeader('Content-Type', 'application/json');
+    
+    console.log('Proxying to:', proxyReq.path);
   },
   onProxyRes: function (proxyRes, req, res) {
-    proxyRes.headers['Access-Control-Allow-Origin'] = 'http://localhost:8080';
-    // Log the response status
-    console.log('Cloudflare Response:', {
-      status: proxyRes.statusCode,
-      headers: proxyRes.headers
-    });
-  },
-  onError: function (err, req, res) {
-    console.error('Cloudflare Proxy Error:', err);
-    res.status(500).send('Proxy Error: ' + err.message);
-  },
+    proxyRes.headers['Access-Control-Allow-Origin'] = 'http://localhost:8081';
+    proxyRes.headers['Access-Control-Allow-Credentials'] = 'true';
+    proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
+    proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, x-goog-api-key';
+  }
 });
 
-// Use the proxy middleware
-app.use('/api/google', googleAIProxy);
-app.use('/api/cloudflare', cloudflareProxy);
+// Mount the proxy middleware
+app.use('/api/google', googleCloudflareProxy);
 
-// Start the server
-const PORT = process.env.PORT || 3001;
+// Error handling
+app.use((err, req, res, next) => {
+  console.error('Proxy Error:', err);
+  res.status(500).json({ error: 'Proxy Error', message: err.message });
+});
+
 app.listen(PORT, () => {
-  console.log(`Proxy server is running on port ${PORT}`);
+  console.log(`Proxy server running on port ${PORT}`);
 });

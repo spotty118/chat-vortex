@@ -36,9 +36,14 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
   const { toast } = useToast();
 
   useEffect(() => {
-    if (provider && provider.id === 'cloudflare') {
-      // Set the direct Cloudflare gateway URL
-      setGatewayUrl('https://gateway.ai.cloudflare.com/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/openai');
+    if (provider) {
+      if (provider.id === 'cloudflare') {
+        // Set the direct Cloudflare gateway URL
+        setGatewayUrl('https://gateway.ai.cloudflare.com/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/openai');
+      } else if (provider.id === 'google') {
+        // Set the Google AI Studio gateway URL
+        setGatewayUrl('https://gateway.ai.cloudflare.com/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/google-ai-studio');
+      }
     }
   }, [provider]);
 
@@ -54,10 +59,10 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
       return;
     }
 
-    if (provider?.id === 'cloudflare' && !gatewayUrl.trim()) {
+    if ((provider?.id === 'cloudflare' || provider?.id === 'google') && !gatewayUrl.trim()) {
       toast({
         title: "Error",
-        description: "Please enter your Cloudflare AI Gateway URL",
+        description: `Please enter your ${provider.id} AI Gateway URL`,
         variant: "destructive",
       });
       return;
@@ -76,8 +81,8 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
 
     try {
       localStorage.setItem(`${provider.id}_api_key`, apiKey.trim());
-      if (provider.id === 'cloudflare') {
-        localStorage.setItem('cloudflare_gateway_url', gatewayUrl.trim());
+      if (provider.id === 'cloudflare' || provider.id === 'google') {
+        localStorage.setItem(`${provider.id}_gateway_url`, gatewayUrl.trim());
       }
       console.log(`Saved API key for provider: ${provider.id}`);
       
@@ -94,7 +99,7 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
       console.error("Error saving API key or fetching models:", error);
       toast({
         title: "Error",
-        description: error instanceof Error ? error.message : "Failed to save API key",
+        description: error instanceof Error ? error.message : "An error occurred",
         variant: "destructive",
       });
     } finally {
@@ -145,7 +150,7 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
               autoComplete="new-password"
             />
           </div>
-          {provider.id === 'cloudflare' && (
+          {(provider.id === 'cloudflare' || provider.id === 'google') && (
             <div className="space-y-2">
               <Label htmlFor="gatewayUrl">Gateway URL</Label>
               <Input
@@ -153,9 +158,9 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
                 type="text"
                 value={gatewayUrl}
                 onChange={(e) => setGatewayUrl(e.target.value)}
-                placeholder="http://localhost:8081/proxy/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/openai"
+                placeholder={provider.id === 'cloudflare' ? 'http://localhost:8081/proxy/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/openai' : 'http://localhost:8081/proxy/v1/google-gateway-url'}
                 required
-                readOnly // Make it read-only since we're auto-setting it
+                readOnly={provider.id === 'cloudflare'} // Make it read-only since we're auto-setting it
               />
             </div>
           )}

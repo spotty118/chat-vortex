@@ -54,10 +54,10 @@ export const ModelSelector = ({
           value={selectedModel}
           onValueChange={onModelSelect}
         >
-          <SelectTrigger className="w-[300px] bg-white/95 backdrop-blur-sm border-neutral-200 hover:bg-white/98 transition-colors">
+          <SelectTrigger className="w-[300px] bg-white border-neutral-200 hover:bg-neutral-50 transition-colors">
             <SelectValue placeholder="Choose a model" />
           </SelectTrigger>
-          <SelectContent className="max-h-[300px] w-[300px] bg-white/98 backdrop-blur-sm border-neutral-200 shadow-lg divide-y divide-neutral-100">
+          <SelectContent className="max-h-[300px] w-[300px] bg-white border-neutral-200 shadow-lg divide-y divide-neutral-100">
             {Object.entries(
               availableModels.reduce((acc, model) => {
                 if (!model?.id) return acc;

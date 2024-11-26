@@ -1,8 +1,8 @@
-import { Provider } from "@/lib/types";
+import { Provider, ProviderFeatures } from "@/lib/types";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Settings, Bot } from "lucide-react";
+import { Settings, Bot, ChevronRight, Paperclip } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ProviderCardProps {
@@ -10,6 +10,7 @@ interface ProviderCardProps {
   isActive: boolean;
   onSelect: (provider: Provider) => void;
   onConfigure: (provider: Provider) => void;
+  onAttachment?: (provider: Provider) => void;
 }
 
 export const ProviderCard = ({
@@ -17,43 +18,80 @@ export const ProviderCard = ({
   isActive,
   onSelect,
   onConfigure,
+  onAttachment,
 }: ProviderCardProps) => {
-  const getStatusColor = (status: Provider["status"]) => {
-    switch (status) {
-      case "online":
-        return "bg-emerald-500";
-      case "maintenance":
-        return "bg-yellow-500";
-      case "offline":
-        return "bg-red-500";
-    }
+  const getStatusConfig = (status: Provider["status"]) => {
+    const configs = {
+      online: {
+        color: "bg-emerald-500",
+        shadow: "shadow-emerald-500/20",
+        text: "Operational"
+      },
+      maintenance: {
+        color: "bg-yellow-500",
+        shadow: "shadow-yellow-500/20",
+        text: "Under Maintenance"
+      },
+      offline: {
+        color: "bg-red-500",
+        shadow: "shadow-red-500/20",
+        text: "Offline"
+      }
+    };
+    return configs[status];
   };
+
+  const hasAttachmentSupport = (provider: Provider) => {
+    return provider.models.some((model) => model.capabilities.includes("attachments"));
+  };
+
+  const statusConfig = getStatusConfig(provider.status);
 
   return (
     <Card
       className={cn(
-        "bg-background/60 backdrop-blur-sm border transition-all duration-300 hover:bg-background/80",
-        isActive ? "ring-2 ring-primary" : "hover:ring-1 hover:ring-primary/20"
+        "group relative overflow-hidden transition-all duration-300",
+        "bg-background/60 backdrop-blur supports-[backdrop-filter]:bg-background/60",
+        "border hover:border-primary/50",
+        isActive ? [
+          "ring-2 ring-primary shadow-lg",
+          "before:absolute before:inset-0 before:bg-gradient-to-r",
+          "before:from-primary/5 before:to-transparent before:opacity-50"
+        ] : [
+          "hover:shadow-md hover:translate-y-[-2px]",
+          "hover:bg-background/80"
+        ]
       )}
     >
-      <div className={cn(
-        "transition-all duration-300",
-        !isActive && "hover:bg-muted/50"
-      )}>
-        <div className={cn(
-          "p-4",
-          !isActive && "py-2"
-        )}>
+      <div
+        className={cn(
+          "relative transition-all duration-300",
+          "hover:bg-muted/20"
+        )}
+      >
+        <div
+          className={cn(
+            "p-4 transition-all duration-300",
+            !isActive && "py-3"
+          )}
+        >
           <div 
-            className="flex items-center justify-between cursor-pointer"
+            className="flex items-center justify-between cursor-pointer group/card"
             onClick={() => onSelect(provider)}
           >
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-lg overflow-hidden flex items-center justify-center bg-white/10 backdrop-blur-sm">
+            <div className="flex items-center gap-4">
+              <div className={cn(
+                "w-10 h-10 rounded-xl overflow-hidden",
+                "flex items-center justify-center",
+                "bg-white/10 backdrop-blur-sm",
+                "ring-1 ring-white/10",
+                "transition-transform duration-300",
+                "group-hover/card:scale-110"
+              )}>
                 <img
                   src={provider.logo}
                   alt={`${provider.name} logo`}
-                  className="w-6 h-6 object-contain"
+                  className="w-7 h-7 object-contain"
                   loading="lazy"
                   onError={(e) => {
                     e.currentTarget.src = `data:image/svg+xml,${encodeURIComponent(
@@ -62,77 +100,98 @@ export const ProviderCard = ({
                   }}
                 />
               </div>
-              <div>
-                <h3 className="font-semibold">{provider.name}</h3>
+              <div className="space-y-1">
+                <div className="flex items-center gap-2">
+                  <h3 className={cn(
+                    "font-semibold tracking-tight",
+                    "transition-colors duration-300",
+                    "group-hover/card:text-primary"
+                  )}>
+                    {provider.name}
+                  </h3>
+                  <ChevronRight className={cn(
+                    "h-4 w-4 text-muted-foreground/50",
+                    "transition-all duration-300",
+                    "group-hover/card:translate-x-1",
+                    "group-hover/card:text-primary"
+                  )} />
+                </div>
                 {isActive && (
                   <div className="flex items-center gap-2">
                     <span
                       className={cn(
-                        "h-1.5 w-1.5 rounded-full",
-                        getStatusColor(provider.status)
+                        "h-2 w-2 rounded-full",
+                        statusConfig.color,
+                        "shadow-lg",
+                        statusConfig.shadow,
+                        "animate-pulse"
                       )}
                     />
-                    <span className="text-xs text-muted-foreground capitalize">
-                      {provider.status}
+                    <span className="text-sm text-muted-foreground">
+                      {statusConfig.text}
                     </span>
                   </div>
                 )}
               </div>
             </div>
             {isActive && (
-              <Button
-                variant="ghost"
-                size="icon"
-                className="shrink-0"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onConfigure(provider);
-                }}
-              >
-                <Settings className="h-4 w-4" />
-              </Button>
+              <div className="flex items-center gap-2">
+                {hasAttachmentSupport(provider) && onAttachment && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onAttachment(provider);
+                    }}
+                  >
+                    <Paperclip className="h-4 w-4" />
+                  </Button>
+                )}
+                {onConfigure && (
+                  <Button
+                    size="icon"
+                    variant="ghost"
+                    className="h-8 w-8"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onConfigure(provider);
+                    }}
+                  >
+                    <Settings className="h-4 w-4" />
+                  </Button>
+                )}
+              </div>
             )}
           </div>
         </div>
 
         {isActive && (
-          <div className="px-4 pb-4 pt-1">
+          <div className="px-4 pb-4 pt-1 space-y-4">
             <div className="space-y-3">
-              <div className="grid gap-1">
-                {provider.models.map((model) => (
-                  <div
-                    key={model.id}
-                    className="flex items-center justify-between"
-                  >
-                    <div className="grid gap-0.5">
-                      <div className="text-sm font-medium">{model.name}</div>
-                      <div className="flex items-center gap-2">
-                        {model.capabilities.map((capability) => (
-                          <Badge
-                            key={capability}
-                            variant="secondary"
-                            className="text-xs"
-                          >
-                            {capability}
-                          </Badge>
-                        ))}
-                      </div>
-                    </div>
-                    <span className="text-xs text-muted-foreground">
-                      ${model.tokenCost.toFixed(3)}/1k tokens
-                    </span>
+              <div className="grid gap-2">
+                <p className="text-sm text-muted-foreground leading-relaxed">
+                  {provider.description}
+                </p>
+                {provider.features && Object.keys(provider.features).some(key => provider.features[key as keyof ProviderFeatures]) && (
+                  <div className="flex flex-wrap gap-2">
+                    {Object.entries(provider.features)
+                      .filter(([_, value]) => value)
+                      .map(([feature]) => (
+                        <Badge
+                          key={feature}
+                          variant="secondary"
+                          className={cn(
+                            "bg-muted/50 text-xs",
+                            "hover:bg-primary/20 hover:text-primary"
+                          )}
+                        >
+                          {feature}
+                        </Badge>
+                      ))}
                   </div>
-                ))}
-              </div>
-              <div className="grid gap-1 text-xs text-muted-foreground">
-                <div className="flex justify-between">
-                  <span>Latency</span>
-                  <span>{provider.latency}ms</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Tokens per Second</span>
-                  <span>{provider.tps}</span>
-                </div>
+                )}
               </div>
             </div>
           </div>

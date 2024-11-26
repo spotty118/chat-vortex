@@ -28,7 +28,8 @@ export const fetchModels = async (provider: Provider): Promise<any> => {
   try {
     switch (provider.id) {
       case "google":
-        return fetchGoogleModels(apiKey);
+        const customApiUrl = localStorage.getItem("google_gateway_url");
+        return fetchGoogleModels(apiKey, customApiUrl);
       case "openrouter":
         return fetchOpenRouterModels(apiKey);
       case "openai":
@@ -66,7 +67,8 @@ export const sendMessage = async (
   try {
     switch (provider.id) {
       case "google":
-        return sendGoogleMessage(apiKey, modelId, messages);
+        const customApiUrl = localStorage.getItem("google_gateway_url");
+        return sendGoogleMessage(apiKey, modelId, messages, signal, customApiUrl);
       case "openrouter":
         return sendOpenRouterMessage(apiKey, modelId, messages, signal);
       case "openai":

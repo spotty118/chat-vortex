@@ -72,16 +72,23 @@ export const sendOpenRouterMessage = async (
     }
 
     const data = await response.json();
-    console.log('OpenRouter API Response:', data);
+    console.log('OpenRouter API Response:', JSON.stringify(data, null, 2));
 
-    // Validate response format
-    if (!data.choices?.[0]?.message?.content) {
-      console.error('Invalid response format from OpenRouter:', data);
+    // Handle different response formats
+    let content = '';
+    if (data.choices?.[0]?.message?.content) {
+      content = data.choices[0].message.content;
+    } else if (data.choices?.[0]?.content) {
+      content = data.choices[0].content;
+    } else if (typeof data.choices?.[0]?.text === 'string') {
+      content = data.choices[0].text;
+    } else {
+      console.error('Unexpected response format from OpenRouter:', JSON.stringify(data, null, 2));
       throw new APIError('Invalid response format from OpenRouter');
     }
 
     return {
-      message: data.choices[0].message.content,
+      message: content,
       usage: data.usage || {
         prompt_tokens: 0,
         completion_tokens: 0,

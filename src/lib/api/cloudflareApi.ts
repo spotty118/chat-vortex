@@ -4,22 +4,45 @@ import type { ChatMessage } from '../types';
 const PROXY_BASE = 'http://localhost:3001/api/cloudflare';
 const CLOUDFLARE_PATH = '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/openai';
 
-export const fetchCloudflareModels = async (apiKey: string) => {
+export const fetchCloudflareModels = async (apiKey: string, customUrl?: string) => {
   try {
-    const response = await fetch(`${PROXY_BASE}${CLOUDFLARE_PATH}/models`, {
+    const baseUrl = customUrl || `${PROXY_BASE}${CLOUDFLARE_PATH}`;
+    const response = await fetch(`${baseUrl}/models`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
       },
     });
 
     if (!response.ok) {
+      const errorText = await response.text();
+      console.error('Cloudflare API Error:', errorText);
+      
+      // For Google Vertex AI, return predefined models
+      if (customUrl && customUrl.includes('google-vertex')) {
+        return [{
+          id: 'chat-bison',
+          name: 'Google Vertex AI - Chat-Bison',
+          capabilities: ["chat", "code"]
+        }];
+      }
+      
       throw new APIError(`Failed to fetch models: ${response.statusText}`);
     }
 
     const data = await response.json();
     
-    // Filter for chat models and map to our format
+    // If using Google Vertex AI through Cloudflare
+    if (customUrl && customUrl.includes('google-vertex')) {
+      return [{
+        id: 'chat-bison',
+        name: 'Google Vertex AI - Chat-Bison',
+        capabilities: ["chat", "code"]
+      }];
+    }
+    
+    // For OpenAI models through Cloudflare
     const chatModels = data.data
       .filter((model: any) => model.id.includes('gpt'))
       .map((model: any) => ({
@@ -34,7 +57,17 @@ export const fetchCloudflareModels = async (apiKey: string) => {
     return chatModels;
   } catch (error) {
     console.error('Error fetching Cloudflare models:', error);
-    // Fallback to default models if fetch fails
+    
+    // Return appropriate fallback models based on the URL
+    if (customUrl && customUrl.includes('google-vertex')) {
+      return [{
+        id: 'chat-bison',
+        name: 'Google Vertex AI - Chat-Bison',
+        capabilities: ["chat", "code"]
+      }];
+    }
+    
+    // Default OpenAI models
     return [
       {
         id: "gpt-4",
@@ -54,7 +87,8 @@ export const sendCloudflareMessage = async (
   apiKey: string,
   modelId: string,
   messages: ChatMessage[],
-  signal?: AbortSignal
+  signal?: AbortSignal,
+  customUrl?: string
 ) => {
   console.log('Sending message to Cloudflare AI Gateway...', { 
     modelId, 
@@ -62,7 +96,8 @@ export const sendCloudflareMessage = async (
   });
   
   try {
-    const response = await fetch(`${PROXY_BASE}${CLOUDFLARE_PATH}/chat/completions`, {
+    const baseUrl = customUrl || `${PROXY_BASE}${CLOUDFLARE_PATH}`;
+    const response = await fetch(`${baseUrl}/chat/completions`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
