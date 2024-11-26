@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useCallback, useEffect, useRef, memo } from "react";
 import { providers } from "@/lib/providers";
 import { Provider } from "@/lib/types";
 import { ProviderCard } from "@/components/ProviderCard";
@@ -11,16 +11,36 @@ import { MessageSquare, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeProvider, useTheme } from "@/components/theme-provider";
 
-const Index = () => {
+const Index = memo(() => {
   const [activeProvider, setActiveProvider] = useState<Provider | null>(null);
   const [configureProvider, setConfigureProvider] = useState<Provider | null>(null);
   const [attachmentProvider, setAttachmentProvider] = useState<Provider | null>(null);
   const [attachments, setAttachments] = useState<File[]>([]);
   const { theme, setTheme } = useTheme();
+  const providerChangeRef = useRef<NodeJS.Timeout>();
 
-  const handleAttachmentUpload = (files: File[]) => {
+  // Debounced provider change
+  const handleProviderChange = useCallback((provider: Provider) => {
+    if (providerChangeRef.current) {
+      clearTimeout(providerChangeRef.current);
+    }
+    
+    providerChangeRef.current = setTimeout(() => {
+      setActiveProvider(provider);
+    }, 100);
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      if (providerChangeRef.current) {
+        clearTimeout(providerChangeRef.current);
+      }
+    };
+  }, []);
+
+  const handleAttachmentUpload = useCallback((files: File[]) => {
     setAttachments(files);
-  };
+  }, []);
 
   return (
     <div className="h-screen bg-background">
@@ -47,12 +67,6 @@ const Index = () => {
         <ResizablePanelGroup 
           direction="horizontal" 
           className="transition-opacity duration-200 ease-in-out"
-          onLayout={() => {
-            // Avoid layout thrashing by using requestAnimationFrame
-            requestAnimationFrame(() => {
-              window.dispatchEvent(new Event('resize'));
-            });
-          }}
         >
           {/* Left Panel - Provider List */}
           <ResizablePanel 
@@ -63,22 +77,14 @@ const Index = () => {
           >
             <div className="flex h-full flex-col">
               <h2 className="px-4 text-lg font-semibold mb-4">Providers</h2>
-              <ScrollArea 
-                className="flex-1"
-                onScroll={(e) => {
-                  // Throttle scroll events
-                  requestAnimationFrame(() => {
-                    e.currentTarget.style.willChange = 'scroll-position';
-                  });
-                }}
-              >
+              <ScrollArea className="flex-1">
                 <div className="space-y-2 px-2">
                   {providers.map((provider) => (
                     <ProviderCard
                       key={provider.id}
                       provider={provider}
                       isActive={activeProvider?.id === provider.id}
-                      onSelect={() => setActiveProvider(provider)}
+                      onSelect={() => handleProviderChange(provider)}
                       onConfigure={() => setConfigureProvider(provider)}
                       onAttachment={() => setAttachmentProvider(provider)}
                     />
@@ -101,6 +107,7 @@ const Index = () => {
             <div className="h-full rounded-lg border bg-card text-card-foreground shadow-sm">
               {activeProvider ? (
                 <Chat 
+                  key={activeProvider.id} // Force new instance on provider change
                   provider={activeProvider} 
                   attachments={attachments}
                 />
@@ -130,7 +137,9 @@ const Index = () => {
       />
     </div>
   );
-};
+});
+
+Index.displayName = "Index";
 
 export default function IndexPage() {
   return (

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback } from "react";
+import { useState, useEffect, useRef, useMemo, useCallback, memo } from "react";
 import { nanoid } from "nanoid";
 import { Search, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,7 @@ interface ChatProps {
   attachments?: File[];
 }
 
-export const Chat = ({ provider, attachments }: ChatProps) => {
+export const Chat = memo(({ provider, attachments }: ChatProps) => {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<MessageWithMetadata[]>([]);
   const [selectedModel, setSelectedModel] = useState<string>("");
@@ -33,59 +33,87 @@ export const Chat = ({ provider, attachments }: ChatProps) => {
   const { toast } = useToast();
   const bottomRef = useRef<HTMLDivElement>(null);
   const { tools, executeTool } = useTools();
+  const initializationRef = useRef(false);
 
   // Maximum number of messages to keep in context
   const MAX_MESSAGES = 50;
   // Maximum total tokens to maintain in context
   const MAX_TOKENS = 4000;
 
-  useEffect(() => {
-    const initializeChat = async () => {
-      try {
-        console.log(`Initializing chat with provider: ${provider.name}`);
-        setAvailableModels([]);
-        setSelectedModel("");
-        setMessages([]);
-        conversationId.current = nanoid();
-        
-        console.log(`Fetching models for ${provider.name}...`);
-        const models = await fetchModels(provider);
-        const modelList = models.data || models;
-        console.log(`Received models for ${provider.name}:`, modelList);
-        
-        if (modelList?.length > 0) {
+  // Memoize initialization function
+  const initializeChat = useCallback(async () => {
+    if (initializationRef.current) return;
+    initializationRef.current = true;
+
+    try {
+      setAvailableModels([]);
+      setSelectedModel("");
+      setMessages([]);
+      conversationId.current = nanoid();
+      
+      // Batch async operations
+      const modelsFetch = fetchModels(provider);
+      
+      // Use Promise.all for concurrent operations
+      const [modelsResult] = await Promise.all([
+        modelsFetch
+      ]);
+      
+      const modelList = modelsResult.data || modelsResult;
+      if (modelList?.length > 0) {
+        // Batch state updates
+        requestAnimationFrame(() => {
           setAvailableModels(modelList);
           setSelectedModel(modelList[0].id);
-        }
-      } catch (error) {
-        console.error(`Error initializing chat: ${error}`);
-        toast({
-          title: "Error",
-          description: "Failed to initialize chat. Please try again.",
-          variant: "destructive",
         });
       }
-    };
+    } catch (error) {
+      console.error(`Error initializing chat:`, error);
+      toast({
+        title: "Error",
+        description: "Failed to initialize chat. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      initializationRef.current = false;
+    }
+  }, [provider.id, toast]);
 
+  // Debounced save conversation
+  const debouncedSave = useMemo(() => {
+    let timeout: NodeJS.Timeout;
+    return (data: any) => {
+      if (timeout) clearTimeout(timeout);
+      timeout = setTimeout(() => {
+        try {
+          saveConversation(data);
+        } catch (error) {
+          console.error('Error saving conversation:', error);
+        }
+      }, 1000);
+    };
+  }, []);
+
+  useEffect(() => {
     initializeChat();
-  }, [provider.id]); // Only re-run if provider.id changes
+    
+    return () => {
+      initializationRef.current = false;
+    };
+  }, [initializeChat]);
 
   useEffect(() => {
     if (messages.length > 0) {
-      try {
-        saveConversation({
-          id: conversationId.current,
-          provider: provider.id,
-          model: selectedModel,
-          messages,
-          createdAt: messages[0].timestamp,
-          updatedAt: Date.now(),
-        });
-      } catch (error) {
-        console.error('Error saving conversation:', error);
-      }
+      debouncedSave({
+        id: conversationId.current,
+        provider: provider.id,
+        model: selectedModel,
+        messages,
+        createdAt: messages[0].timestamp,
+        updatedAt: Date.now(),
+      });
     }
-  }, [messages.length, provider.id, selectedModel]);
+  }, [messages.length, provider.id, selectedModel, debouncedSave]);
 
   const truncateMessages = useCallback((msgs: MessageWithMetadata[]): MessageWithMetadata[] => {
     if (msgs.length <= MAX_MESSAGES) return msgs;
@@ -412,4 +440,4 @@ export const Chat = ({ provider, attachments }: ChatProps) => {
       </div>
     </div>
   );
-};
+});
