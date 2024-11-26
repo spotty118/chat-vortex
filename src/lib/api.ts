@@ -16,22 +16,26 @@ export async function fetchModels(provider: Provider | null) {
 
   const apiKey = getApiKey(provider);
 
-  const response = await fetch('/api/models', {
-    method: 'GET',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'X-Provider': provider.id,
-      'Content-Type': 'application/json',
-    },
-  });
+  try {
+    const response = await fetch('/api/models', {
+      method: 'GET',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'X-Provider': provider.id,
+        'Content-Type': 'application/json',
+      },
+    });
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(error || `Failed to fetch models: ${response.statusText}`);
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `Failed to fetch models: ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Error fetching models:', error);
+    throw error;
   }
-
-  const data = await response.json();
-  return data;
 }
 
 export async function sendMessage(
@@ -62,6 +66,7 @@ export async function sendMessage(
   const data = await response.json();
   return {
     message: data.choices?.[0]?.message?.content || '',
+    id: data.id,
     usage: data.usage,
     metadata: data.metadata,
   };
