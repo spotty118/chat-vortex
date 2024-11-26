@@ -44,7 +44,16 @@ const Index = () => {
 
       {/* Main Content */}
       <div className="h-[calc(100vh-3.5rem)] p-4">
-        <ResizablePanelGroup direction="horizontal" className="fade-in">
+        <ResizablePanelGroup 
+          direction="horizontal" 
+          className="transition-opacity duration-200 ease-in-out"
+          onLayout={() => {
+            // Avoid layout thrashing by using requestAnimationFrame
+            requestAnimationFrame(() => {
+              window.dispatchEvent(new Event('resize'));
+            });
+          }}
+        >
           {/* Left Panel - Provider List */}
           <ResizablePanel 
             defaultSize={20} 
@@ -54,7 +63,15 @@ const Index = () => {
           >
             <div className="flex h-full flex-col">
               <h2 className="px-4 text-lg font-semibold mb-4">Providers</h2>
-              <ScrollArea className="flex-1">
+              <ScrollArea 
+                className="flex-1"
+                onScroll={(e) => {
+                  // Throttle scroll events
+                  requestAnimationFrame(() => {
+                    e.currentTarget.style.willChange = 'scroll-position';
+                  });
+                }}
+              >
                 <div className="space-y-2 px-2">
                   {providers.map((provider) => (
                     <ProviderCard
@@ -74,7 +91,13 @@ const Index = () => {
           <ResizableHandle withHandle className="bg-border" />
 
           {/* Right Panel - Chat */}
-          <ResizablePanel defaultSize={80}>
+          <ResizablePanel 
+            defaultSize={80}
+            style={{
+              contain: 'content',
+              willChange: 'transform'
+            }}
+          >
             <div className="h-full rounded-lg border bg-card text-card-foreground shadow-sm">
               {activeProvider ? (
                 <Chat 

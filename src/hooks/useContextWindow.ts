@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { ChatMessage } from '@/lib/types/ai';
 import { Model } from '@/lib/types/models';
 
@@ -14,35 +14,48 @@ export const useContextWindow = (
   model: Model,
   reserveTokens: number = 500 // Reserve tokens for the response
 ) => {
+  // Cache token estimates using message ID as key
+  const tokenEstimateCache = useRef<Map<string, number>>(new Map());
+
   const tokenEstimates = useMemo(() => {
     return messages.map(msg => {
-      if (typeof msg.content === 'string') {
+      // Check cache first
+      if (msg.id && tokenEstimateCache.current.has(msg.id)) {
         return {
           ...msg,
-          estimatedTokens: msg.tokens || estimateTokens(msg.content)
+          estimatedTokens: tokenEstimateCache.current.get(msg.id)!
         };
       }
-      
-      const content = msg.content as {
-        text?: string;
-        code?: { content: string };
-        images?: string[];
-      };
-      
-      // Handle complex message content
-      let totalTokens = 0;
-      if (content.text) {
-        totalTokens += estimateTokens(content.text);
+
+      let estimatedTokens: number;
+      if (typeof msg.content === 'string') {
+        estimatedTokens = msg.tokens || estimateTokens(msg.content);
+      } else {
+        const content = msg.content as {
+          text?: string;
+          code?: { content: string };
+          images?: string[];
+        };
+        
+        let totalTokens = 0;
+        if (content.text) {
+          totalTokens += estimateTokens(content.text);
+        }
+        if (content.code?.content) {
+          totalTokens += estimateTokens(content.code.content);
+        }
+        const imageTokens = (content.images?.length || 0) * 1000;
+        estimatedTokens = msg.tokens || (totalTokens + imageTokens);
       }
-      if (content.code?.content) {
-        totalTokens += estimateTokens(content.code.content);
+
+      // Cache the result
+      if (msg.id) {
+        tokenEstimateCache.current.set(msg.id, estimatedTokens);
       }
-      // Image tokens are handled differently per model
-      const imageTokens = (content.images?.length || 0) * 1000;
-      
+
       return {
         ...msg,
-        estimatedTokens: msg.tokens || (totalTokens + imageTokens)
+        estimatedTokens
       };
     });
   }, [messages]);

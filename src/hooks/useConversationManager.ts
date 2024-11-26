@@ -1,4 +1,5 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { debounce } from 'lodash';
 import { ChatMessage, SavedConversation as Conversation, ConversationMetadata } from '@/lib/types';
 
 const STORAGE_KEY = 'vortex_conversations';
@@ -22,9 +23,19 @@ export const useConversationManager = () => {
     };
   });
 
+  // Debounced localStorage save
+  const debouncedSave = useRef(
+    debounce((state: ConversationState) => {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }, 1000)
+  ).current;
+
   useEffect(() => {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
-  }, [state]);
+    debouncedSave(state);
+    return () => {
+      debouncedSave.cancel();
+    };
+  }, [state, debouncedSave]);
 
   // Create a new conversation
   const createConversation = useCallback((
