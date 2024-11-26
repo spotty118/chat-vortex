@@ -46,30 +46,35 @@ export async function sendMessage(
 ) {
   const apiKey = getApiKey(provider);
 
-  const response = await fetch('/api/chat', {
-    method: 'POST',
-    headers: {
-      'Authorization': `Bearer ${apiKey}`,
-      'X-Provider': provider.id,
-      'X-Model-ID': modelId,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ messages }),
-    signal,
-  });
+  try {
+    const response = await fetch('/api/chat', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'X-Provider': provider.id,
+        'X-Model-ID': modelId,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ messages }),
+      signal,
+    });
 
-  if (!response.ok) {
-    const error = await response.text();
-    throw new Error(error || `Failed to send message: ${response.statusText}`);
+    if (!response.ok) {
+      const error = await response.text();
+      throw new Error(error || `Failed to send message: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    return {
+      message: data.choices?.[0]?.message?.content || '',
+      id: data.id,
+      usage: data.usage,
+      metadata: data.metadata,
+    };
+  } catch (error) {
+    console.error('Error sending message:', error);
+    throw error;
   }
-
-  const data = await response.json();
-  return {
-    message: data.choices?.[0]?.message?.content || '',
-    id: data.id,
-    usage: data.usage,
-    metadata: data.metadata,
-  };
 }
 
 export class APIError extends Error {

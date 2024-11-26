@@ -4,9 +4,9 @@ export const config = {
   runtime: 'edge',
 };
 
-// Add CORS headers to all responses
+// Update CORS headers to allow the deployed domain
 const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Origin': 'https://preview--chat-vortex.lovable.app',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Provider, X-Model-ID',
 };
@@ -20,7 +20,7 @@ const PROVIDER_ENDPOINTS = {
 };
 
 export default async function POST(req) {
-  // Handle CORS preflight requests
+  // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders });
   }
