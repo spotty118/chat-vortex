@@ -20,6 +20,7 @@ const PROVIDER_ENDPOINTS = {
 export default async function handler(req) {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
+    console.log('CORS preflight request received');
     return new Response(null, { headers: corsHeaders });
   }
 
@@ -28,6 +29,7 @@ export default async function handler(req) {
   const apiKey = req.headers.get('Authorization')?.split('Bearer ')[1];
   
   if (!apiKey) {
+    console.error('API key is missing');
     return new Response('API key is required', { 
       status: 401,
       headers: corsHeaders
@@ -37,12 +39,14 @@ export default async function handler(req) {
   try {
     const gatewayUrl = PROVIDER_ENDPOINTS[provider];
     if (!gatewayUrl) {
+      console.error(`Unsupported provider: ${provider}`);
       return new Response(`Unsupported provider: ${provider}`, {
         status: 400,
         headers: corsHeaders
       });
     }
 
+    console.log(`Forwarding request to ${gatewayUrl}`);
     // Forward the request to Cloudflare Gateway
     const response = await fetch(gatewayUrl, {
       method: req.method,
@@ -64,12 +68,14 @@ export default async function handler(req) {
           provider: 'cloudflare'
         }]
       };
+      console.log('Returning formatted response for Cloudflare provider');
       return new Response(JSON.stringify(formattedData), {
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
         status: response.status,
       });
     }
 
+    console.log('Returning response from gateway');
     return new Response(JSON.stringify(data), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       status: response.status,
