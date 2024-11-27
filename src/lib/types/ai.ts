@@ -21,12 +21,14 @@ export interface MessageWithMetadata {
   };
   streaming?: boolean;
   chunks?: any[];
-  error?: string;
+  error?: string | Error;
   edited?: boolean;
   editedAt?: number;
 }
 
-export interface ChatMessage extends MessageWithMetadata {}
+export interface ChatMessage extends MessageWithMetadata {
+  tokens?: number;
+}
 
 export interface StreamingOptions {
   onChunk?: (chunk: StreamChunk) => void;

@@ -5,8 +5,6 @@ type ModelFilter = {
   capabilities?: string[];
   maxCost?: number;
   minContextWindow?: number;
-  inputFormats?: string[];
-  outputFormats?: string[];
 };
 
 export const useModelSelector = (providers: Provider[]) => {
@@ -32,26 +30,12 @@ export const useModelSelector = (providers: Provider[]) => {
         if (!hasAllCapabilities) return false;
       }
 
-      if (filters.maxCost && model.pricing.prompt > filters.maxCost) {
+      if (filters.maxCost && model.pricing?.prompt > filters.maxCost) {
         return false;
       }
 
       if (filters.minContextWindow && model.contextWindow < filters.minContextWindow) {
         return false;
-      }
-
-      if (filters.inputFormats?.length) {
-        const hasAllInputFormats = filters.inputFormats.every(format => 
-          model.inputFormats.includes(format as any)
-        );
-        if (!hasAllInputFormats) return false;
-      }
-
-      if (filters.outputFormats?.length) {
-        const hasAllOutputFormats = filters.outputFormats.every(format => 
-          model.outputFormats.includes(format as any)
-        );
-        if (!hasAllOutputFormats) return false;
       }
 
       return true;
