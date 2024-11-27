@@ -29,6 +29,7 @@ export interface MessageWithMetadata {
 
 export interface ChatMessage extends MessageWithMetadata {
   tokens?: number;
+  duration?: number;
 }
 
 export interface StreamingOptions {
