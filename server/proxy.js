@@ -72,8 +72,36 @@ const googleCloudflareProxy = createProxyMiddleware({
   }
 });
 
-// Mount the proxy middleware
+// Cloudflare proxy middleware configuration
+const cloudflareProxy = createProxyMiddleware({
+  target: 'https://gateway.ai.cloudflare.com',
+  changeOrigin: true,
+  secure: true,
+  pathRewrite: (path) => {
+    return path.replace('/api/cloudflare', '');
+  },
+  onProxyReq: function (proxyReq, req, res) {
+    console.log('Proxying Cloudflare request to:', proxyReq.path);
+  },
+  onProxyRes: function (proxyRes, req, res) {
+    const origin = req.headers.origin;
+    
+    if (origin && corsOptions.origin.includes(origin)) {
+      proxyRes.headers['Access-Control-Allow-Origin'] = origin;
+      proxyRes.headers['Access-Control-Allow-Credentials'] = 'true';
+      proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
+      proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization';
+      
+      console.log('Setting Cloudflare CORS headers for origin:', origin);
+    }
+    
+    console.log('Cloudflare response headers:', proxyRes.headers);
+  }
+});
+
+// Mount the proxy middlewares
 app.use('/api/google', googleCloudflareProxy);
+app.use('/api/cloudflare', cloudflareProxy);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
