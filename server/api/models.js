@@ -2,9 +2,9 @@ export const config = {
   runtime: 'edge',
 };
 
-// Update CORS headers to allow the deployed domain
+// Update CORS headers to allow both localhost and deployed domain
 const corsHeaders = {
-  'Access-Control-Allow-Origin': 'https://preview--chat-vortex.lovable.app',
+  'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization, X-Provider, X-Model-ID',
 };
