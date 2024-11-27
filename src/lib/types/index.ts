@@ -20,6 +20,9 @@ export interface Model {
   };
   contextWindow?: number;
   provider: string;
+  maxOutputTokens?: number;
+  streamingSupport: boolean;
+  version?: string;
 }
 
 export interface Provider {
@@ -77,4 +80,5 @@ export interface ChatMessage {
   edited?: boolean;
   editedAt?: number;
   duration?: number;
+  attachment?: File;
 }
