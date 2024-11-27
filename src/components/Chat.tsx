@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useMemo, useCallback, memo } from "react";
+import { useState, useEffect, useRef, useMemo } from "react";
 import { nanoid } from "nanoid";
 import { Search, Download } from "lucide-react";
 import { Input } from "@/components/ui/input";
@@ -20,7 +20,7 @@ interface ChatProps {
   attachments?: File[];
 }
 
-export const Chat = memo(({ provider, attachments }: ChatProps) => {
+export const Chat = ({ provider, attachments }: ChatProps) => {
   const [input, setInput] = useState("");
   const [messages, setMessages] = useState<MessageWithMetadata[]>([]);
   const [selectedModel, setSelectedModel] = useState<string>("");
@@ -33,89 +33,103 @@ export const Chat = memo(({ provider, attachments }: ChatProps) => {
   const { toast } = useToast();
   const bottomRef = useRef<HTMLDivElement>(null);
   const { tools, executeTool } = useTools();
-  const initializationRef = useRef(false);
 
   // Maximum number of messages to keep in context
   const MAX_MESSAGES = 50;
   // Maximum total tokens to maintain in context
   const MAX_TOKENS = 4000;
 
-  // Memoize initialization function
-  const initializeChat = useCallback(async () => {
-    if (initializationRef.current) return;
-    initializationRef.current = true;
-
-    try {
-      setAvailableModels([]);
-      setSelectedModel("");
-      setMessages([]);
-      conversationId.current = nanoid();
-      
-      // Batch async operations
-      const modelsFetch = fetchModels(provider);
-      
-      // Use Promise.all for concurrent operations
-      const [modelsResult] = await Promise.all([
-        modelsFetch
-      ]);
-      
-      const modelList = modelsResult.data || modelsResult;
-      if (modelList?.length > 0) {
-        // Batch state updates
-        requestAnimationFrame(() => {
+  useEffect(() => {
+    const initializeChat = async () => {
+      try {
+        console.log(`Initializing chat with provider: ${provider.name}`);
+        setAvailableModels([]);
+        setSelectedModel("");
+        setMessages([]);
+        conversationId.current = nanoid();
+        
+        console.log(`Fetching models for ${provider.name}...`);
+        const models = await fetchModels(provider);
+        const modelList = models.data || models;
+        console.log(`Received models for ${provider.name}:`, modelList);
+        
+        if (modelList?.length > 0) {
           setAvailableModels(modelList);
           setSelectedModel(modelList[0].id);
+        }
+      } catch (error) {
+        console.error(`Error initializing chat: ${error}`);
+        toast({
+          title: "Error",
+          description: "Failed to initialize chat. Please try again.",
+          variant: "destructive",
         });
       }
-    } catch (error) {
-      console.error(`Error initializing chat:`, error);
-      toast({
-        title: "Error",
-        description: "Failed to initialize chat. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      initializationRef.current = false;
-    }
-  }, [provider.id, toast]);
-
-  // Debounced save conversation
-  const debouncedSave = useMemo(() => {
-    let timeout: NodeJS.Timeout;
-    return (data: any) => {
-      if (timeout) clearTimeout(timeout);
-      timeout = setTimeout(() => {
-        try {
-          saveConversation(data);
-        } catch (error) {
-          console.error('Error saving conversation:', error);
-        }
-      }, 1000);
     };
-  }, []);
 
-  useEffect(() => {
     initializeChat();
-    
-    return () => {
-      initializationRef.current = false;
-    };
-  }, [initializeChat]);
+  }, [provider.id]); // Only re-run if provider.id changes
 
   useEffect(() => {
     if (messages.length > 0) {
-      debouncedSave({
-        id: conversationId.current,
-        provider: provider.id,
-        model: selectedModel,
-        messages,
-        createdAt: messages[0].timestamp,
-        updatedAt: Date.now(),
-      });
+      try {
+        saveConversation({
+          id: conversationId.current,
+          provider: provider.id,
+          model: selectedModel,
+          messages,
+          createdAt: messages[0].timestamp,
+          updatedAt: Date.now(),
+        });
+      } catch (error) {
+        console.error('Error saving conversation:', error);
+      }
     }
-  }, [messages.length, provider.id, selectedModel, debouncedSave]);
+  }, [messages.length, provider.id, selectedModel]);
 
-  const truncateMessages = useCallback((msgs: MessageWithMetadata[]): MessageWithMetadata[] => {
+  useEffect(() => {
+    if (attachments && attachments.length > 0) {
+      // Check if we've already processed these attachments
+      const newAttachments = attachments.filter(file => 
+        !processedAttachments.includes(file.name)
+      );
+
+      if (newAttachments.length === 0) return;
+
+      const currentModel = provider.models.find(m => m.id === selectedModel);
+      if (!currentModel?.capabilities.includes("attachments")) {
+        toast({
+          title: "Model doesn't support attachments",
+          description: "Please select a model that supports attachments to use this feature.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const attachmentMessages = newAttachments.map(file => ({
+        id: nanoid(),
+        role: "user" as const,
+        content: `[Attached file: ${file.name}]`,
+        timestamp: Date.now(),
+        attachment: file
+      }));
+      
+      setMessages(prev => [...prev, ...attachmentMessages]);
+      setProcessedAttachments(prev => [...prev, ...newAttachments.map(file => file.name)]);
+    }
+  }, [attachments, provider.models, selectedModel]);
+
+  const clearChat = () => {
+    setMessages([]);
+    setProcessedAttachments([]);
+    conversationId.current = nanoid();
+    toast({
+      title: "Chat cleared",
+      description: "The conversation has been reset.",
+    });
+  };
+
+  const truncateMessages = (msgs: MessageWithMetadata[]): MessageWithMetadata[] => {
     if (msgs.length <= MAX_MESSAGES) return msgs;
 
     // Keep system messages and last MAX_MESSAGES messages
@@ -124,9 +138,9 @@ export const Chat = memo(({ provider, attachments }: ChatProps) => {
     const recentMessages = nonSystemMessages.slice(-MAX_MESSAGES);
 
     return [...systemMessages, ...recentMessages];
-  }, [MAX_MESSAGES]);
+  };
 
-  const getContextMessages = useCallback((msgs: MessageWithMetadata[]): MessageWithMetadata[] => {
+  const getContextMessages = (msgs: MessageWithMetadata[]): MessageWithMetadata[] => {
     let totalTokens = 0;
     const contextMessages: MessageWithMetadata[] = [];
     
@@ -152,50 +166,7 @@ export const Chat = memo(({ provider, attachments }: ChatProps) => {
     }
     
     return contextMessages;
-  }, [MAX_TOKENS]);
-
-  // Memoize processed messages
-  const processedMessages = useMemo(() => {
-    const truncated = truncateMessages(messages);
-    return getContextMessages(truncated);
-  }, [messages, truncateMessages, getContextMessages]);
-
-  const processAttachments = useCallback((files: File[]) => {
-    if (!files.length) return;
-
-    const currentModel = provider.models.find(m => m.id === selectedModel);
-    if (!currentModel?.capabilities.includes("attachments")) {
-      toast({
-        title: "Model doesn't support attachments",
-        description: "Please select a model that supports attachments to use this feature.",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    const newAttachments = files.filter(file => 
-      !processedAttachments.includes(file.name)
-    );
-
-    if (newAttachments.length === 0) return;
-
-    const attachmentMessages = newAttachments.map(file => ({
-      id: nanoid(),
-      role: "user" as const,
-      content: `[Attached file: ${file.name}]`,
-      timestamp: Date.now(),
-      attachment: file
-    }));
-    
-    setMessages(prev => [...prev, ...attachmentMessages]);
-    setProcessedAttachments(prev => [...prev, ...newAttachments.map(file => file.name)]);
-  }, [provider.models, selectedModel, processedAttachments, toast]);
-
-  useEffect(() => {
-    if (attachments?.length) {
-      processAttachments(attachments);
-    }
-  }, [attachments, processAttachments]);
+  };
 
   const handleToolCall = async (toolCall: any) => {
     try {
@@ -334,16 +305,6 @@ export const Chat = memo(({ provider, attachments }: ChatProps) => {
     };
   }, { prompt_tokens: 0, completion_tokens: 0, total_tokens: 0 });
 
-  const clearChat = () => {
-    setMessages([]);
-    setProcessedAttachments([]);
-    conversationId.current = nanoid();
-    toast({
-      title: "Chat cleared",
-      description: "The conversation has been reset.",
-    });
-  };
-
   return (
     <div className="flex h-full flex-col">
       {/* Header */}
@@ -409,7 +370,7 @@ export const Chat = memo(({ provider, attachments }: ChatProps) => {
             ) : (
               <div className="space-y-6">
                 <MessageList
-                  messages={processedMessages}
+                  messages={truncateMessages(filteredMessages)}
                   isLoading={isLoading}
                   provider={provider}
                 />
@@ -440,4 +401,4 @@ export const Chat = memo(({ provider, attachments }: ChatProps) => {
       </div>
     </div>
   );
-});
+};

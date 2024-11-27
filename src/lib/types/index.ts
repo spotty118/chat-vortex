@@ -1,6 +1,3 @@
 export * from './ai';
-export interface Provider {
-  id: string;
-  name: string;
-  // Add any other common provider properties
-}
+export * from './embedding';
+// Add other type exports as needed

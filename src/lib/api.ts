@@ -1,85 +1,91 @@
-import { Provider } from './types';
-import { MessageWithMetadata } from './types/ai';
+import { Provider } from "./types";
+import { fetchGoogleModels, sendGoogleMessage } from "./api/googleApi";
+import { fetchOpenRouterModels, sendOpenRouterMessage } from "./api/openRouterApi";
+import { fetchCloudflareModels, sendCloudflareMessage } from "./api/cloudflareApi";
+import { APIError } from "./errors";
+import { 
+  fetchOpenAIModels, 
+  fetchAnthropicModels, 
+  fetchMistralModels, 
+  fetchCohereModels,
+  sendOpenAIMessage,
+  sendAnthropicMessage,
+  sendMistralMessage,
+  sendCohereMessage
+} from "./api/providerApis";
+import type { ChatMessage } from "./types";
 
-function getApiKey(provider: Provider) {
-  const apiKey = localStorage.getItem(`${provider.id}-apiKey`);
+export { APIError };
+
+export const fetchModels = async (provider: Provider): Promise<any> => {
+  const apiKey = localStorage.getItem(`${provider.id}_api_key`);
   if (!apiKey) {
-    throw new Error(`API key for ${provider.name} is required`);
-  }
-  return apiKey;
-}
-
-export async function fetchModels(provider: Provider | null) {
-  if (!provider) {
-    throw new Error('Provider is required');
+    throw new APIError("API key not found");
   }
 
-  const apiKey = getApiKey(provider);
+  console.log(`Fetching models for provider: ${provider.id}`);
 
   try {
-    const response = await fetch('/api/models', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'X-Provider': provider.id,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(error || `Failed to fetch models: ${response.statusText}`);
+    switch (provider.id) {
+      case "google":
+        const customApiUrl = localStorage.getItem("google_gateway_url");
+        return fetchGoogleModels(apiKey, customApiUrl);
+      case "openrouter":
+        return fetchOpenRouterModels(apiKey);
+      case "openai":
+        return fetchOpenAIModels(apiKey);
+      case "anthropic":
+        return fetchAnthropicModels(apiKey);
+      case "mistral":
+        return fetchMistralModels(apiKey);
+      case "cohere":
+        return fetchCohereModels(apiKey);
+      case "cloudflare":
+        return fetchCloudflareModels(apiKey);
+      default:
+        throw new APIError("Provider not supported");
     }
-
-    return await response.json();
   } catch (error) {
-    console.error('Error fetching models:', error);
-    throw error;
+    console.error(`Error fetching models for ${provider.id}:`, error);
+    throw error instanceof APIError ? error : new APIError("Failed to fetch models from provider");
   }
-}
+};
 
-export async function sendMessage(
+export const sendMessage = async (
   provider: Provider,
   modelId: string,
-  messages: MessageWithMetadata[],
-  signal?: AbortSignal
-) {
-  const apiKey = getApiKey(provider);
+  messages: ChatMessage[],
+  signal?: AbortSignal,
+): Promise<any> => {
+  const apiKey = localStorage.getItem(`${provider.id}_api_key`);
+  if (!apiKey) {
+    throw new APIError("API key not found. Please configure the provider first.");
+  }
+
+  console.log(`Sending message to ${provider.name} using model ${modelId}`);
 
   try {
-    const response = await fetch('/api/chat', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'X-Provider': provider.id,
-        'X-Model-ID': modelId,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ messages }),
-      signal,
-    });
-
-    if (!response.ok) {
-      const error = await response.text();
-      throw new Error(error || `Failed to send message: ${response.statusText}`);
+    switch (provider.id) {
+      case "google":
+        const customApiUrl = localStorage.getItem("google_gateway_url");
+        return sendGoogleMessage(apiKey, modelId, messages, signal, customApiUrl);
+      case "openrouter":
+        return sendOpenRouterMessage(apiKey, modelId, messages, signal);
+      case "openai":
+        return sendOpenAIMessage(apiKey, modelId, messages, signal);
+      case "anthropic":
+        return sendAnthropicMessage(apiKey, modelId, messages, signal);
+      case "mistral":
+        return sendMistralMessage(apiKey, modelId, messages, signal);
+      case "cohere":
+        return sendCohereMessage(apiKey, modelId, messages, signal);
+      case "cloudflare":
+        return sendCloudflareMessage(apiKey, modelId, messages, signal);
+      default:
+        throw new APIError("Provider not supported");
     }
-
-    const data = await response.json();
-    return {
-      message: data.choices?.[0]?.message?.content || '',
-      id: data.id,
-      usage: data.usage,
-      metadata: data.metadata,
-    };
   } catch (error) {
-    console.error('Error sending message:', error);
-    throw error;
+    console.error(`API Error with ${provider.id}:`, error);
+    throw error instanceof APIError ? error : new APIError("Failed to send message to provider");
   }
-}
-
-export class APIError extends Error {
-  constructor(message: string) {
-    super(message);
-    this.name = 'APIError';
-  }
-}
+};

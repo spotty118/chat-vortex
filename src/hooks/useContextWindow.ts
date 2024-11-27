@@ -1,22 +1,12 @@
-import { useMemo, useRef, useCallback } from 'react';
+import { useMemo } from 'react';
 import { ChatMessage } from '@/lib/types/ai';
 import { Model } from '@/lib/types/models';
 
 // Average tokens per character for rough estimation
 const TOKENS_PER_CHAR = 0.25;
 
-// Memoize token estimation function
-const createTokenEstimator = () => {
-  const cache = new Map<string, number>();
-  
-  return (text: string): number => {
-    if (cache.has(text)) {
-      return cache.get(text)!;
-    }
-    const estimate = Math.ceil(text.length * TOKENS_PER_CHAR);
-    cache.set(text, estimate);
-    return estimate;
-  };
+const estimateTokens = (text: string): number => {
+  return Math.ceil(text.length * TOKENS_PER_CHAR);
 };
 
 export const useContextWindow = (
@@ -24,66 +14,38 @@ export const useContextWindow = (
   model: Model,
   reserveTokens: number = 500 // Reserve tokens for the response
 ) => {
-  // Cache token estimates using message ID as key
-  const tokenEstimateCache = useRef<Map<string, number>>(new Map());
-  const estimator = useMemo(() => createTokenEstimator(), []);
-  
-  const estimateContentTokens = useCallback((content: {
-    text?: string;
-    code?: { content: string };
-    images?: string[];
-  }): number => {
-    let totalTokens = 0;
-    
-    if (content.text) {
-      totalTokens += estimator(content.text);
-    }
-    if (content.code?.content) {
-      totalTokens += estimator(content.code.content);
-    }
-    // Images have fixed token cost
-    totalTokens += (content.images?.length || 0) * 1000;
-    
-    return totalTokens;
-  }, [estimator]);
-
   const tokenEstimates = useMemo(() => {
-    // Process messages in batches of 10
-    const batchSize = 10;
-    const results: Array<ChatMessage & { estimatedTokens: number }> = [];
-    
-    for (let i = 0; i < messages.length; i += batchSize) {
-      const batch = messages.slice(i, i + batchSize);
-      
-      batch.forEach(msg => {
-        if (msg.id && tokenEstimateCache.current.has(msg.id)) {
-          results.push({
-            ...msg,
-            estimatedTokens: tokenEstimateCache.current.get(msg.id)!
-          });
-          return;
-        }
-
-        let estimatedTokens: number;
-        if (typeof msg.content === 'string') {
-          estimatedTokens = msg.tokens || estimator(msg.content);
-        } else {
-          estimatedTokens = msg.tokens || estimateContentTokens(msg.content);
-        }
-
-        if (msg.id) {
-          tokenEstimateCache.current.set(msg.id, estimatedTokens);
-        }
-
-        results.push({
+    return messages.map(msg => {
+      if (typeof msg.content === 'string') {
+        return {
           ...msg,
-          estimatedTokens
-        });
-      });
-    }
-
-    return results;
-  }, [messages, estimator, estimateContentTokens]);
+          estimatedTokens: msg.tokens || estimateTokens(msg.content)
+        };
+      }
+      
+      const content = msg.content as {
+        text?: string;
+        code?: { content: string };
+        images?: string[];
+      };
+      
+      // Handle complex message content
+      let totalTokens = 0;
+      if (content.text) {
+        totalTokens += estimateTokens(content.text);
+      }
+      if (content.code?.content) {
+        totalTokens += estimateTokens(content.code.content);
+      }
+      // Image tokens are handled differently per model
+      const imageTokens = (content.images?.length || 0) * 1000;
+      
+      return {
+        ...msg,
+        estimatedTokens: msg.tokens || (totalTokens + imageTokens)
+      };
+    });
+  }, [messages]);
 
   const contextSize = useMemo(() => {
     return tokenEstimates.reduce((sum, msg) => sum + msg.estimatedTokens, 0);

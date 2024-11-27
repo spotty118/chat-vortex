@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect, useRef, memo } from "react";
+import { useState } from "react";
 import { providers } from "@/lib/providers";
 import { Provider } from "@/lib/types";
 import { ProviderCard } from "@/components/ProviderCard";
@@ -11,36 +11,16 @@ import { MessageSquare, Moon, Sun } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ThemeProvider, useTheme } from "@/components/theme-provider";
 
-const Index = memo(() => {
+const Index = () => {
   const [activeProvider, setActiveProvider] = useState<Provider | null>(null);
   const [configureProvider, setConfigureProvider] = useState<Provider | null>(null);
   const [attachmentProvider, setAttachmentProvider] = useState<Provider | null>(null);
   const [attachments, setAttachments] = useState<File[]>([]);
   const { theme, setTheme } = useTheme();
-  const providerChangeRef = useRef<NodeJS.Timeout>();
 
-  // Debounced provider change
-  const handleProviderChange = useCallback((provider: Provider) => {
-    if (providerChangeRef.current) {
-      clearTimeout(providerChangeRef.current);
-    }
-    
-    providerChangeRef.current = setTimeout(() => {
-      setActiveProvider(provider);
-    }, 100);
-  }, []);
-
-  useEffect(() => {
-    return () => {
-      if (providerChangeRef.current) {
-        clearTimeout(providerChangeRef.current);
-      }
-    };
-  }, []);
-
-  const handleAttachmentUpload = useCallback((files: File[]) => {
+  const handleAttachmentUpload = (files: File[]) => {
     setAttachments(files);
-  }, []);
+  };
 
   return (
     <div className="h-screen bg-background">
@@ -64,10 +44,7 @@ const Index = memo(() => {
 
       {/* Main Content */}
       <div className="h-[calc(100vh-3.5rem)] p-4">
-        <ResizablePanelGroup 
-          direction="horizontal" 
-          className="transition-opacity duration-200 ease-in-out"
-        >
+        <ResizablePanelGroup direction="horizontal" className="fade-in">
           {/* Left Panel - Provider List */}
           <ResizablePanel 
             defaultSize={20} 
@@ -84,7 +61,7 @@ const Index = memo(() => {
                       key={provider.id}
                       provider={provider}
                       isActive={activeProvider?.id === provider.id}
-                      onSelect={() => handleProviderChange(provider)}
+                      onSelect={() => setActiveProvider(provider)}
                       onConfigure={() => setConfigureProvider(provider)}
                       onAttachment={() => setAttachmentProvider(provider)}
                     />
@@ -97,17 +74,10 @@ const Index = memo(() => {
           <ResizableHandle withHandle className="bg-border" />
 
           {/* Right Panel - Chat */}
-          <ResizablePanel 
-            defaultSize={80}
-            style={{
-              contain: 'content',
-              willChange: 'transform'
-            }}
-          >
+          <ResizablePanel defaultSize={80}>
             <div className="h-full rounded-lg border bg-card text-card-foreground shadow-sm">
               {activeProvider ? (
                 <Chat 
-                  key={activeProvider.id} // Force new instance on provider change
                   provider={activeProvider} 
                   attachments={attachments}
                 />
@@ -137,9 +107,7 @@ const Index = memo(() => {
       />
     </div>
   );
-});
-
-Index.displayName = "Index";
+};
 
 export default function IndexPage() {
   return (
