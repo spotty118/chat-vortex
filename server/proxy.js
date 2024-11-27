@@ -44,21 +44,28 @@ const googleCloudflareProxy = createProxyMiddleware({
     console.log('Proxying request to:', proxyReq.path);
   },
   onProxyRes: function (proxyRes, req, res) {
+    // Get the origin from the request headers
+    const origin = req.headers.origin;
+    
     // Remove any existing CORS headers from the response
     delete proxyRes.headers['access-control-allow-origin'];
     delete proxyRes.headers['access-control-allow-credentials'];
     delete proxyRes.headers['access-control-allow-methods'];
     delete proxyRes.headers['access-control-allow-headers'];
-
-    // Get the origin from the request headers
-    const origin = req.headers.origin;
     
-    // Set new CORS headers on the response
-    if (origin && (origin === 'http://localhost:8081' || origin === 'https://preview--chat-vortex.lovable.app')) {
-      proxyRes.headers['Access-Control-Allow-Origin'] = origin;
-      proxyRes.headers['Access-Control-Allow-Credentials'] = 'true';
-      proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
-      proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, x-goog-api-key';
+    // Set CORS headers based on the origin
+    if (origin) {
+      // Check if the origin is in our allowed list
+      if (corsOptions.origin.includes(origin)) {
+        proxyRes.headers['Access-Control-Allow-Origin'] = origin;
+        proxyRes.headers['Access-Control-Allow-Credentials'] = 'true';
+        proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
+        proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, x-goog-api-key';
+        
+        console.log('Setting CORS headers for origin:', origin);
+      } else {
+        console.warn('Rejected request from unauthorized origin:', origin);
+      }
     }
     
     console.log('Response headers:', proxyRes.headers);
