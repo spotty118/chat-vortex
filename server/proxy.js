@@ -5,9 +5,12 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// Configure CORS with specific origins
+// Configure CORS with specific origins and options
 const corsOptions = {
-  origin: ['http://localhost:8081', 'https://preview--chat-vortex.lovable.app'],
+  origin: [
+    'http://localhost:8081',
+    'https://preview--chat-vortex.lovable.app'
+  ],
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-goog-api-key'],
   credentials: true,
@@ -22,7 +25,7 @@ app.use(cors(corsOptions));
 app.options('*', cors(corsOptions));
 
 // Common proxy configuration
-const createProxy = (pathPrefix, targetPath, extraConfig = {}) => {
+const createProxy = (pathPrefix, targetPath) => {
   return createProxyMiddleware({
     target: 'https://gateway.ai.cloudflare.com',
     changeOrigin: true,
@@ -40,10 +43,7 @@ const createProxy = (pathPrefix, targetPath, extraConfig = {}) => {
       // Set content type
       proxyReq.setHeader('Content-Type', 'application/json');
       
-      console.log(`Proxying ${pathPrefix} request to:`, proxyReq.path);
-      
-      // Apply any extra request handlers
-      extraConfig.onProxyReq?.(proxyReq, req, res);
+      console.log(`Proxying ${req.method} request to:`, proxyReq.path);
     },
     onProxyRes: (proxyRes, req, res) => {
       const origin = req.headers.origin;
@@ -61,15 +61,19 @@ const createProxy = (pathPrefix, targetPath, extraConfig = {}) => {
         proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
         proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, x-goog-api-key';
         
-        console.log(`Setting CORS headers for ${pathPrefix} origin:`, origin);
+        console.log(`Set CORS headers for origin:`, origin);
       }
       
-      console.log(`${pathPrefix} response headers:`, proxyRes.headers);
-      
-      // Apply any extra response handlers
-      extraConfig.onProxyRes?.(proxyRes, req, res);
+      console.log(`Response headers:`, proxyRes.headers);
     },
-    ...extraConfig
+    onError: (err, req, res) => {
+      console.error('Proxy Error:', err);
+      res.status(500).json({ 
+        error: 'Proxy Error', 
+        message: err.message,
+        path: req.path
+      });
+    }
   });
 };
 
@@ -91,9 +95,9 @@ app.get('/health', (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Proxy Error:', err);
+  console.error('Server Error:', err);
   res.status(500).json({ 
-    error: 'Proxy Error', 
+    error: 'Server Error', 
     message: err.message,
     path: req.path
   });
