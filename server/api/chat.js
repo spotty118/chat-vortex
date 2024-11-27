@@ -22,6 +22,7 @@ const PROVIDER_ENDPOINTS = {
 export default async function POST(req) {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
+    console.log('CORS preflight request received');
     return new Response(null, { headers: corsHeaders });
   }
 
@@ -30,6 +31,7 @@ export default async function POST(req) {
   const apiKey = req.headers.get('Authorization')?.split('Bearer ')[1];
 
   if (!apiKey) {
+    console.error('API key is missing');
     return new Response('API key is required', { 
       status: 401,
       headers: corsHeaders
@@ -39,6 +41,7 @@ export default async function POST(req) {
   try {
     const getEndpoint = PROVIDER_ENDPOINTS[provider];
     if (!getEndpoint) {
+      console.error(`Unsupported provider: ${provider}`);
       return new Response(`Unsupported provider: ${provider}`, {
         status: 400,
         headers: corsHeaders
@@ -46,6 +49,7 @@ export default async function POST(req) {
     }
 
     const gatewayUrl = getEndpoint(modelId);
+    console.log(`Forwarding request to ${gatewayUrl}`);
     const body = await req.json();
 
     // Format the request body based on the provider
@@ -79,6 +83,7 @@ export default async function POST(req) {
 
     if (!response.ok) {
       const error = await response.text();
+      console.error(`Error from gateway: ${error}`);
       return new Response(error, {
         status: response.status,
         headers: corsHeaders
@@ -110,6 +115,7 @@ export default async function POST(req) {
       formattedResponse = data;
     }
 
+    console.log('Returning response from gateway');
     return new Response(JSON.stringify(formattedResponse), {
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
