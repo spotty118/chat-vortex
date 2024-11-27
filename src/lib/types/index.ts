@@ -36,7 +36,7 @@ export interface SavedConversation {
   id: string;
   provider: string;
   model: string;
-  messages: any[];
+  messages: ChatMessage[];
   createdAt: number;
   updatedAt: number;
 }
@@ -66,4 +66,15 @@ export interface ChatMessage {
     error?: string;
     sources?: string[];
   };
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+  streaming?: boolean;
+  chunks?: any[];
+  error?: string | Error;
+  edited?: boolean;
+  editedAt?: number;
+  duration?: number;
 }
