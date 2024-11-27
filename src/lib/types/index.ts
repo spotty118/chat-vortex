@@ -15,8 +15,6 @@ export interface Model {
     completion: number;
   };
   contextWindow?: number;
-  inputFormats?: string[];
-  outputFormats?: string[];
   provider: string;
 }
 

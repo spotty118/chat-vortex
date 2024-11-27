@@ -164,6 +164,10 @@ export const useStreamingResponse = (options: StreamingOptions = {}) => {
   const createMessage = useCallback((
     role: ChatMessage['role'] = 'assistant'
   ): ChatMessage => {
+    const duration = state.endTime && state.startTime
+      ? state.endTime - state.startTime
+      : undefined;
+
     return {
       id: crypto.randomUUID(),
       role,
@@ -172,9 +176,8 @@ export const useStreamingResponse = (options: StreamingOptions = {}) => {
       streaming: state.isStreaming,
       chunks: state.chunks,
       error: state.error,
-      duration: state.endTime && state.startTime
-        ? state.endTime - state.startTime
-        : undefined,
+      duration,
+      tokens: undefined // Add tokens property
     };
   }, [state]);
 

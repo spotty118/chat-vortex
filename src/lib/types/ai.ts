@@ -24,6 +24,7 @@ export interface MessageWithMetadata {
   error?: string | Error;
   edited?: boolean;
   editedAt?: number;
+  duration?: number;
 }
 
 export interface ChatMessage extends MessageWithMetadata {
