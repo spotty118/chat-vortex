@@ -93,7 +93,7 @@ export interface ConversationMetadata {
   lastMessage: string | null;
 }
 
-// Re-export types from other type files
+// Re-export all types
 export * from './ai';
 export * from './conversation';
 export * from './embedding';

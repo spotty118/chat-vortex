@@ -8,7 +8,7 @@ export interface Model {
     prompt: number;
     completion: number;
   };
-  contextWindow?: number;
+  contextWindow: number;
   provider: string;
   maxOutputTokens?: number;
   streamingSupport: boolean;
