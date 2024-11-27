@@ -6,6 +6,10 @@ export type ModelCapability =
   | "streaming"
   | "attachments";
 
+export interface ProviderFeatures {
+  [key: string]: boolean;
+}
+
 export interface Model {
   id: string;
   name: string;
@@ -16,10 +20,6 @@ export interface Model {
   };
   contextWindow?: number;
   provider: string;
-}
-
-export interface ProviderFeatures {
-  [key: string]: boolean;
 }
 
 export interface Provider {
@@ -48,4 +48,22 @@ export interface ConversationMetadata {
   createdAt: number;
   updatedAt: number;
   lastMessage: string | null;
+}
+
+export interface ChatMessage {
+  id: string;
+  role: "user" | "assistant" | "system";
+  content: string;
+  timestamp: number;
+  tokens?: number;
+  metadata?: {
+    toolCall?: any;
+    toolCalls?: any[];
+    model?: string;
+    provider?: string;
+    tokens?: number;
+    processingTime?: number;
+    error?: string;
+    sources?: string[];
+  };
 }
