@@ -20,6 +20,7 @@ export interface MessageWithMetadata {
     total_tokens: number;
   };
   streaming?: boolean;
+  chunks?: any[];
   edited?: boolean;
   editedAt?: number;
 }

@@ -41,7 +41,7 @@ export const useParallelModels = () => {
           return {
             modelId: model.id,
             provider: provider.id,
-            response: response.content,
+            response: response.message,
             timing: {
               start,
               end: Date.now(),
