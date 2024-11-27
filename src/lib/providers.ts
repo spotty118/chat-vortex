@@ -6,6 +6,12 @@ export const providers: Provider[] = [
     name: "OpenAI",
     logo: "https://upload.wikimedia.org/wikipedia/commons/0/04/ChatGPT_logo.svg",
     description: "Leading AI research company known for advanced language models like GPT-4 and ChatGPT.",
+    status: 'online',
+    features: {
+      streaming: true,
+      attachments: true,
+      codeCompletion: true
+    },
     models: [
       {
         id: "gpt-4-turbo-preview",
@@ -42,6 +48,12 @@ export const providers: Provider[] = [
     name: "Anthropic",
     logo: "https://www.anthropic.com/favicon.ico",
     description: "AI research company focused on developing safe and ethical AI systems.",
+    status: 'online',
+    features: {
+      streaming: true,
+      attachments: false,
+      codeCompletion: true
+    },
     models: [
       {
         id: "claude-3-opus",
@@ -78,6 +90,12 @@ export const providers: Provider[] = [
     name: "Google AI",
     logo: "https://www.gstatic.com/lamda/images/favicon_v1_150160cddff7f294ce30.svg",
     description: "Google's AI research division, offering advanced language models like Gemini.",
+    status: 'online',
+    features: {
+      streaming: true,
+      attachments: false,
+      codeCompletion: true
+    },
     models: [
       {
         id: "gemini-pro",

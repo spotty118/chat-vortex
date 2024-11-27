@@ -62,7 +62,30 @@ export interface ChatMessage {
   edited?: boolean;
   editedAt?: number;
   duration?: number;
-  attachment?: File;
 }
 
-export type { SavedConversation, ConversationMetadata } from './conversation';
+export interface SavedConversation {
+  id: string;
+  provider: string;
+  model: string;
+  messages: ChatMessage[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+export interface ConversationMetadata {
+  id: string;
+  title: string;
+  messageCount: number;
+  createdAt: number;
+  updatedAt: number;
+  lastMessage: string | null;
+}
+
+// Re-export types from other type files
+export * from './ai';
+export * from './conversation';
+export * from './embedding';
+export * from './models';
+export * from './tools';
+export * from './analytics';
