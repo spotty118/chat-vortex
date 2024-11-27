@@ -1,3 +1,19 @@
+export interface Document {
+  id: string;
+  content: string;
+  embedding?: number[];
+  metadata: {
+    source?: string;
+    [key: string]: any;
+  };
+}
+
+export interface SearchResult {
+  document: Document;
+  score: number;
+  relevance: number;
+}
+
 export interface EmbeddingVector {
   vector: number[];
   text: string;

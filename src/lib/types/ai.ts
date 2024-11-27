@@ -3,6 +3,7 @@ export interface MessageWithMetadata {
   role: 'user' | 'assistant' | 'system';
   content: string;
   timestamp: number;
+  tokens?: number;
   metadata?: {
     toolCall?: any;
     toolCalls?: any[];
@@ -18,6 +19,9 @@ export interface MessageWithMetadata {
     completion_tokens: number;
     total_tokens: number;
   };
+  streaming?: boolean;
+  edited?: boolean;
+  editedAt?: number;
 }
 
 export interface ChatMessage extends MessageWithMetadata {}
@@ -48,3 +52,5 @@ export interface TokenUsage {
   completion_tokens: number;
   total_tokens: number;
 }
+
+export type ContentFormat = "text" | "image" | "code" | "audio" | "video";

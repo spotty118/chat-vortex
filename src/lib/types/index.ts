@@ -6,16 +6,6 @@ export type ModelCapability =
   | "streaming"
   | "attachments";
 
-export interface Provider {
-  id: string;
-  name: string;
-  logo: string;
-  description: string;
-  models: Model[];
-  status: 'online' | 'maintenance' | 'offline';
-  features: ProviderFeatures;
-}
-
 export interface Model {
   id: string;
   name: string;
@@ -24,6 +14,20 @@ export interface Model {
     prompt: number;
     completion: number;
   };
+  contextWindow?: number;
+  inputFormats?: string[];
+  outputFormats?: string[];
+  provider: string;
+}
+
+export interface Provider {
+  id: string;
+  name: string;
+  logo: string;
+  description: string;
+  models: Model[];
+  status: 'online' | 'maintenance' | 'offline';
+  features: ProviderFeatures;
 }
 
 export interface ProviderFeatures {
@@ -42,7 +46,8 @@ export interface SavedConversation {
 export interface ConversationMetadata {
   id: string;
   title: string;
-  preview: string;
+  messageCount: number;
   createdAt: number;
   updatedAt: number;
+  lastMessage: string | null;
 }
