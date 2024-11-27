@@ -1,11 +1,15 @@
-export type ModelCapability = 
+// Core types for the chat application
+
+// Supported model capabilities
+export type ModelCapability =
   | "chat"
-  | "code"
+  | "code" 
   | "analysis"
   | "vision"
   | "streaming"
   | "attachments";
 
+// Provider features
 export interface ProviderFeatures {
   streaming?: boolean;
   attachments?: boolean;
@@ -13,21 +17,23 @@ export interface ProviderFeatures {
   [key: string]: boolean | undefined;
 }
 
+// Enhanced model type with detailed specifications
 export interface Model {
   id: string;
   name: string;
+  provider: string;
   capabilities: ModelCapability[];
+  contextWindow: number;
+  maxOutputTokens?: number;
+  streamingSupport: boolean;
+  version?: string;
   pricing?: {
     prompt: number;
     completion: number;
   };
-  contextWindow?: number;
-  provider: string;
-  maxOutputTokens?: number;
-  streamingSupport: boolean;
-  version?: string;
 }
 
+// Provider type
 export interface Provider {
   id: string;
   name: string;
@@ -38,6 +44,7 @@ export interface Provider {
   features: ProviderFeatures;
 }
 
+// Chat message type
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant" | "system";
