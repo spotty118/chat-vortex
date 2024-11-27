@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { debounce } from 'lodash';
-import { ChatMessage, SavedConversation, ConversationMetadata } from '@/lib/types';
+import { ChatMessage } from '@/lib/types';
+import { SavedConversation, ConversationMetadata } from '@/lib/types/conversation';
 
 const STORAGE_KEY = 'vortex_conversations';
 
@@ -291,3 +292,4 @@ export const useConversationManager = () => {
     updateTitle,
   };
 };
+

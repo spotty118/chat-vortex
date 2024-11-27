@@ -1,4 +1,4 @@
-import { SavedConversation } from './types';
+import { SavedConversation } from './types/conversation';
 
 export const saveConversation = (conversation: SavedConversation) => {
   console.log('Saved conversation:', conversation.id);
