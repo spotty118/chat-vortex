@@ -1,12 +1,11 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { debounce } from 'lodash';
-import { ChatMessage } from '@/lib/types';
-import { SavedConversation, ConversationMetadata } from '@/lib/types/conversation';
+import { ChatMessage, SavedConversation as Conversation, ConversationMetadata } from '@/lib/types';
 
 const STORAGE_KEY = 'vortex_conversations';
 
 interface ConversationState {
-  conversations: Record<string, SavedConversation>;
+  conversations: Record<string, Conversation>;
   activeConversationId: string | null;
   metadata: Record<string, ConversationMetadata>;
 }
@@ -292,4 +291,3 @@ export const useConversationManager = () => {
     updateTitle,
   };
 };
-

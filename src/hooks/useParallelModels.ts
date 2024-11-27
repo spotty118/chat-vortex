@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { ChatMessage } from '@/lib/types/ai';
+import { ChatMessage, ContentFormat } from '@/lib/types/ai';
 import { Model, Provider } from '@/lib/types';
 import { sendMessage } from '@/lib/api';
 
@@ -41,7 +41,7 @@ export const useParallelModels = () => {
           return {
             modelId: model.id,
             provider: provider.id,
-            response: response.message,
+            response: response.content,
             timing: {
               start,
               end: Date.now(),
