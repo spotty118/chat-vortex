@@ -1,4 +1,4 @@
-// Core types for the chat application
+import { Message } from 'ai';
 
 // Supported model capabilities
 export type ModelCapability =
@@ -45,10 +45,8 @@ export interface Provider {
 }
 
 // Chat message type with Vercel AI SDK v4 compatibility
-export interface ChatMessage {
+export interface ChatMessage extends Message {
   id: string;
-  role: "user" | "assistant" | "system";
-  content: string;
   timestamp: number;
   tokens?: number;
   metadata?: {
