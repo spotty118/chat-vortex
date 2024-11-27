@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { ChatMessage, ContentFormat } from '@/lib/types/ai';
+import { ChatMessage } from '@/lib/types/ai';
 import { Model, Provider } from '@/lib/types';
 import { sendMessage } from '@/lib/api';
 

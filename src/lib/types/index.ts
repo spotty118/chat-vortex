@@ -20,6 +20,10 @@ export interface Model {
   provider: string;
 }
 
+export interface ProviderFeatures {
+  [key: string]: boolean;
+}
+
 export interface Provider {
   id: string;
   name: string;
@@ -28,10 +32,6 @@ export interface Provider {
   models: Model[];
   status: 'online' | 'maintenance' | 'offline';
   features: ProviderFeatures;
-}
-
-export interface ProviderFeatures {
-  [key: string]: boolean;
 }
 
 export interface SavedConversation {

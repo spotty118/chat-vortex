@@ -21,6 +21,7 @@ export interface MessageWithMetadata {
   };
   streaming?: boolean;
   chunks?: any[];
+  error?: string;
   edited?: boolean;
   editedAt?: number;
 }
