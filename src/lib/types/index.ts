@@ -7,7 +7,10 @@ export type ModelCapability =
   | "attachments";
 
 export interface ProviderFeatures {
-  [key: string]: boolean;
+  streaming?: boolean;
+  attachments?: boolean;
+  codeCompletion?: boolean;
+  [key: string]: boolean | undefined;
 }
 
 export interface Model {
@@ -62,6 +65,7 @@ export interface ChatMessage {
   edited?: boolean;
   editedAt?: number;
   duration?: number;
+  attachment?: File;
 }
 
 export interface SavedConversation {

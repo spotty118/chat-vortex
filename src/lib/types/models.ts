@@ -10,6 +10,16 @@ export interface Model {
   };
   contextWindow?: number;
   provider: string;
+  maxOutputTokens?: number;
+  streamingSupport: boolean;
+  version?: string;
+}
+
+export interface ProviderFeatures {
+  streaming?: boolean;
+  attachments?: boolean;
+  codeCompletion?: boolean;
+  [key: string]: boolean | undefined;
 }
 
 export interface Provider {
@@ -20,8 +30,4 @@ export interface Provider {
   models: Model[];
   status: 'online' | 'maintenance' | 'offline';
   features: ProviderFeatures;
-}
-
-export interface ProviderFeatures {
-  [key: string]: boolean;
 }
