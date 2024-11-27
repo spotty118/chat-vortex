@@ -35,24 +35,6 @@ export interface Provider {
   features: ProviderFeatures;
 }
 
-export interface SavedConversation {
-  id: string;
-  provider: string;
-  model: string;
-  messages: ChatMessage[];
-  createdAt: number;
-  updatedAt: number;
-}
-
-export interface ConversationMetadata {
-  id: string;
-  title: string;
-  messageCount: number;
-  createdAt: number;
-  updatedAt: number;
-  lastMessage: string | null;
-}
-
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant" | "system";
@@ -82,3 +64,5 @@ export interface ChatMessage {
   duration?: number;
   attachment?: File;
 }
+
+export type { SavedConversation, ConversationMetadata } from './conversation';
