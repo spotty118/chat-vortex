@@ -44,7 +44,7 @@ export interface Provider {
   features: ProviderFeatures;
 }
 
-// Chat message type
+// Chat message type with Vercel AI SDK v4 compatibility
 export interface ChatMessage {
   id: string;
   role: "user" | "assistant" | "system";
