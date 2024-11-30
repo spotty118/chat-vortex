@@ -43,6 +43,9 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
       } else if (provider.id === 'google') {
         // Set the Google AI Studio gateway URL
         setGatewayUrl('https://gateway.ai.cloudflare.com/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/google-ai-studio');
+      } else if (provider.id === 'openai') {
+        // Set the OpenAI gateway URL through Cloudflare
+        setGatewayUrl('https://gateway.ai.cloudflare.com/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/openai');
       }
     }
   }, [provider]);
@@ -59,7 +62,7 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
       return;
     }
 
-    if ((provider?.id === 'cloudflare' || provider?.id === 'google') && !gatewayUrl.trim()) {
+    if ((provider?.id === 'cloudflare' || provider?.id === 'google' || provider?.id === 'openai') && !gatewayUrl.trim()) {
       toast({
         title: "Error",
         description: `Please enter your ${provider.id} AI Gateway URL`,
@@ -81,7 +84,7 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
 
     try {
       localStorage.setItem(`${provider.id}_api_key`, apiKey.trim());
-      if (provider.id === 'cloudflare' || provider.id === 'google') {
+      if (provider.id === 'cloudflare' || provider.id === 'google' || provider.id === 'openai') {
         localStorage.setItem(`${provider.id}_gateway_url`, gatewayUrl.trim());
       }
       console.log(`Saved API key for provider: ${provider.id}`);
@@ -150,7 +153,7 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
               autoComplete="new-password"
             />
           </div>
-          {(provider.id === 'cloudflare' || provider.id === 'google') && (
+          {(provider.id === 'cloudflare' || provider.id === 'google' || provider.id === 'openai') && (
             <div className="space-y-2">
               <Label htmlFor="gatewayUrl">Gateway URL</Label>
               <Input
@@ -158,9 +161,8 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
                 type="text"
                 value={gatewayUrl}
                 onChange={(e) => setGatewayUrl(e.target.value)}
-                placeholder={provider.id === 'cloudflare' ? 'http://localhost:8081/proxy/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/openai' : 'http://localhost:8081/proxy/v1/google-gateway-url'}
+                placeholder="Enter your AI Gateway URL"
                 required
-                readOnly={provider.id === 'cloudflare'} // Make it read-only since we're auto-setting it
               />
             </div>
           )}
