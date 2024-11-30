@@ -5,81 +5,94 @@ const { createProxyMiddleware } = require('http-proxy-middleware');
 const app = express();
 const PORT = process.env.PORT || 8080;
 
-// Enhanced CORS configuration
+// Configure CORS with specific origins
 const corsOptions = {
-  origin: ['http://localhost:8081', 'https://preview--chat-vortex.lovable.app'],
+  origin: [
+    'http://localhost:8081',
+    'https://preview--chat-vortex.lovable.app',
+    'https://preview-2ad03bd7--chat-vortex.lovable.app'
+  ],
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-goog-api-key'],
-  credentials: true
+  credentials: true,
+  preflightContinue: false,
+  optionsSuccessStatus: 204
 };
 
+// Apply CORS middleware
 app.use(cors(corsOptions));
 
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.status(200).json({ status: 'healthy', timestamp: new Date().toISOString() });
-});
+// Handle preflight requests
+app.options('*', cors(corsOptions));
 
-// Google AI proxy configuration
-const googleProxy = createProxyMiddleware({
+// Create proxy middleware
+const proxyMiddleware = createProxyMiddleware({
   target: 'https://gateway.ai.cloudflare.com',
   changeOrigin: true,
-  pathRewrite: (path) => {
-    console.log('Original path:', path);
-    const newPath = path
-      .replace('/api/google', '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/google-ai-studio')
-      .replace(/models\/+/g, 'models/')
-      .replace(':generateContent', '/generateContent');
-    console.log('Rewritten path:', newPath);
-    return newPath;
-  },
+  secure: true,
   onProxyReq: (proxyReq, req, res) => {
-    console.log('Proxying request to:', proxyReq.path);
-    
+    // Copy API key header
     if (req.headers['x-goog-api-key']) {
       proxyReq.setHeader('x-goog-api-key', req.headers['x-goog-api-key']);
     }
     
+    // Remove credentials header
+    proxyReq.removeHeader('cookie');
+    
+    // Set content type
     proxyReq.setHeader('Content-Type', 'application/json');
+    
+    console.log('Proxying request to:', proxyReq.path);
   },
   onProxyRes: (proxyRes, req, res) => {
-    console.log('Response status:', proxyRes.statusCode);
     const origin = req.headers.origin;
     
+    // Remove existing CORS headers
+    delete proxyRes.headers['access-control-allow-origin'];
+    delete proxyRes.headers['access-control-allow-credentials'];
+    
+    // Set CORS headers if origin is allowed
     if (origin && corsOptions.origin.includes(origin)) {
       proxyRes.headers['Access-Control-Allow-Origin'] = origin;
+      proxyRes.headers['Access-Control-Allow-Credentials'] = 'true';
+      proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
+      proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, x-goog-api-key';
+      
+      console.log('Setting CORS headers for origin:', origin);
     }
     
-    proxyRes.headers['Access-Control-Allow-Credentials'] = 'true';
-  },
-  onError: (err, req, res) => {
-    console.error('Proxy Error:', err);
-    res.status(500).json({ error: 'Proxy Error', message: err.message });
+    console.log('Response headers:', proxyRes.headers);
   }
 });
 
-app.use('/api/google', googleProxy);
+// Mount proxy routes
+app.use('/api/google', (req, res, next) => {
+  req.url = req.url.replace('/api/google', '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/google-ai-studio');
+  proxyMiddleware(req, res, next);
+});
 
-// Global error handler
+app.use('/api/cloudflare', (req, res, next) => {
+  req.url = req.url.replace('/api/cloudflare', '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/openai');
+  proxyMiddleware(req, res, next);
+});
+
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Server Error:', err);
-  res.status(500).json({ error: 'Server Error', message: err.message });
-});
-
-// Start server with error handling
-const server = app.listen(PORT, () => {
-  console.log(`Proxy server running on port ${PORT}`);
-  console.log('CORS origins:', corsOptions.origin);
-}).on('error', (err) => {
-  console.error('Failed to start server:', err);
-  process.exit(1);
-});
-
-// Graceful shutdown
-process.on('SIGTERM', () => {
-  console.log('SIGTERM received, shutting down');
-  server.close(() => {
-    console.log('Server closed');
-    process.exit(0);
+  console.error('Proxy Error:', err);
+  res.status(500).json({ 
+    error: 'Proxy Error', 
+    message: err.message,
+    path: req.path
   });
+});
+
+// Start server
+app.listen(PORT, () => {
+  console.log(`Proxy server running on port ${PORT}`);
+  console.log('Allowed origins:', corsOptions.origin);
 });

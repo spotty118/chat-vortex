@@ -4,15 +4,11 @@
   "description": "Proxy server for Chat Vortex",
   "main": "proxy.js",
   "scripts": {
-    "start": "node proxy.js",
-    "dev": "nodemon proxy.js"
+    "start": "node proxy.js"
   },
   "dependencies": {
     "express": "^4.18.2",
     "cors": "^2.8.5",
     "http-proxy-middleware": "^2.0.6"
-  },
-  "devDependencies": {
-    "nodemon": "^3.0.2"
   }
 }

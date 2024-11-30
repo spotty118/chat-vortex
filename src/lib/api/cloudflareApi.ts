@@ -1,10 +1,12 @@
 import { APIError } from '../errors';
 import type { ChatMessage } from '../types';
 
-const PROXY_BASE = 'http://localhost:3001/api/cloudflare';
+// Update proxy base URL to match server port
+const PROXY_BASE = 'http://localhost:8080/api/cloudflare';
 const CLOUDFLARE_PATH = '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/openai';
 
 export const fetchCloudflareModels = async (apiKey: string, customUrl?: string) => {
+  console.log('Fetching Cloudflare models with proxy base:', PROXY_BASE);
   try {
     const baseUrl = customUrl || `${PROXY_BASE}${CLOUDFLARE_PATH}`;
     const response = await fetch(`${baseUrl}/models`, {
@@ -32,6 +34,7 @@ export const fetchCloudflareModels = async (apiKey: string, customUrl?: string) 
     }
 
     const data = await response.json();
+    console.log('Successfully fetched Cloudflare models:', data);
     
     // If using Google Vertex AI through Cloudflare
     if (customUrl && customUrl.includes('google-vertex')) {
@@ -92,7 +95,8 @@ export const sendCloudflareMessage = async (
 ) => {
   console.log('Sending message to Cloudflare AI Gateway...', { 
     modelId, 
-    messageCount: messages.length 
+    messageCount: messages.length,
+    proxyBase: PROXY_BASE 
   });
   
   try {
