@@ -38,11 +38,17 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
   useEffect(() => {
     if (provider) {
       if (provider.id === 'cloudflare') {
-        // Set the direct Cloudflare gateway URL
-        setGatewayUrl('https://gateway.ai.cloudflare.com/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/openai');
+        // Set the proxy URL for Cloudflare
+        setGatewayUrl(process.env.NODE_ENV === 'production'
+          ? 'https://preview--chat-vortex.lovable.app/api/cloudflare'
+          : 'http://localhost:8081/api/cloudflare'
+        );
       } else if (provider.id === 'google') {
-        // Set the Google AI Studio gateway URL
-        setGatewayUrl('https://gateway.ai.cloudflare.com/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/google-ai-studio');
+        // Set the proxy URL for Google AI Studio
+        setGatewayUrl(process.env.NODE_ENV === 'production'
+          ? 'https://preview--chat-vortex.lovable.app/api/google'
+          : 'http://localhost:8081/api/google'
+        );
       }
     }
   }, [provider]);

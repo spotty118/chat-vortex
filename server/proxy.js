@@ -3,16 +3,19 @@ const cors = require('cors');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 8081;
 
 // Configure CORS with specific origins and options
 const corsOptions = {
   origin: [
+    'http://localhost:5173',  // Vite default dev server port
     'http://localhost:8081',
+    'http://localhost:8082',
     'https://preview--chat-vortex.lovable.app'
   ],
   methods: ['GET', 'POST', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'x-goog-api-key'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'x-goog-api-key', 'x-model-id'],
+  exposedHeaders: ['Content-Type', 'Authorization', 'x-goog-api-key', 'x-model-id'],
   credentials: true,
   preflightContinue: false,
   optionsSuccessStatus: 204
@@ -24,15 +27,31 @@ app.use(cors(corsOptions));
 // Handle preflight requests
 app.options('*', cors(corsOptions));
 
+// Logging middleware
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path}`);
+  console.log('Headers:', req.headers);
+  next();
+});
+
 // Common proxy configuration
 const createProxy = (pathPrefix, targetPath) => {
   return createProxyMiddleware({
     target: 'https://gateway.ai.cloudflare.com',
     changeOrigin: true,
     secure: true,
-    pathRewrite: (path) => path.replace(pathPrefix, targetPath),
+    pathRewrite: (path, req) => {
+      // Handle different endpoints
+      if (path.endsWith('/models')) {
+        return `${targetPath}/v1beta/models`;
+      } else if (path.endsWith('/chat')) {
+        const modelId = req.headers['x-model-id'];
+        return `${targetPath}/v1beta/models/${modelId}:generateContent`;
+      }
+      return path.replace(pathPrefix, targetPath);
+    },
     onProxyReq: (proxyReq, req, res) => {
-      // Copy headers
+      // Copy API key header
       if (req.headers['x-goog-api-key']) {
         proxyReq.setHeader('x-goog-api-key', req.headers['x-goog-api-key']);
       }
@@ -43,7 +62,11 @@ const createProxy = (pathPrefix, targetPath) => {
       // Set content type
       proxyReq.setHeader('Content-Type', 'application/json');
       
-      console.log(`Proxying ${req.method} request to:`, proxyReq.path);
+      console.log('Proxying request:', {
+        method: proxyReq.method,
+        path: proxyReq.path,
+        headers: proxyReq.getHeaders()
+      });
     },
     onProxyRes: (proxyRes, req, res) => {
       const origin = req.headers.origin;
@@ -59,12 +82,13 @@ const createProxy = (pathPrefix, targetPath) => {
         proxyRes.headers['Access-Control-Allow-Origin'] = origin;
         proxyRes.headers['Access-Control-Allow-Credentials'] = 'true';
         proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
-        proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, x-goog-api-key';
+        proxyRes.headers['Access-Control-Allow-Headers'] = corsOptions.allowedHeaders.join(', ');
+        proxyRes.headers['Access-Control-Expose-Headers'] = corsOptions.exposedHeaders.join(', ');
         
-        console.log(`Set CORS headers for origin:`, origin);
+        console.log('Set CORS headers for origin:', origin);
       }
       
-      console.log(`Response headers:`, proxyRes.headers);
+      console.log('Response headers:', proxyRes.headers);
     },
     onError: (err, req, res) => {
       console.error('Proxy Error:', err);

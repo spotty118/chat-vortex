@@ -1,9 +1,10 @@
 import { APIError } from '../errors';
 import type { ChatMessage } from '../types';
-import { GoogleGenerativeAI } from '@google/generative-ai';
 
-// Base URL for the proxy server
-const API_BASE = 'http://localhost:8080/api/google';
+// Get the base URL from environment or default to localhost in development
+const API_BASE = process.env.NODE_ENV === 'production'
+  ? 'https://preview--chat-vortex.lovable.app/api/google'
+  : 'http://localhost:8081/api/google';
 
 // Default models in case API fetch fails
 const DEFAULT_MODELS = [
@@ -34,7 +35,9 @@ export const fetchGoogleModels = async (apiKey: string, customApiUrl?: string) =
 
   try {
     const baseUrl = customApiUrl || API_BASE;
-    const response = await fetch(`${baseUrl}/v1beta/models`, {
+    console.log('Fetching models from:', baseUrl);
+
+    const response = await fetch(`${baseUrl}/models`, {
       method: 'GET',
       headers: {
         'Content-Type': 'application/json',
@@ -43,37 +46,20 @@ export const fetchGoogleModels = async (apiKey: string, customApiUrl?: string) =
     });
 
     if (!response.ok) {
-      const errorData = await response.json();
-      console.error('Google AI API Error:', errorData);
-      throw new APIError(`Failed to fetch models: ${response.statusText}`);
+      console.warn('Failed to fetch models from API, using defaults');
+      return DEFAULT_MODELS;
     }
 
-    const data = await response.json();
-    console.log('Available Google AI models:', data);
-
-    // Transform the models into our format
-    const transformedModels = data.models
-      .filter(model => {
-        const modelName = model.name.toLowerCase();
-        return modelName.includes('gemini');
-      })
-      .map(model => ({
-        id: model.name,
-        baseModelId: model.baseModelId,
-        name: model.displayName || model.baseModelId,
-        description: model.description,
-        capabilities: ["chat", "code"],
-        contextLength: model.inputTokenLimit,
-        inputPrice: 0.00001,
-        outputPrice: 0.00002,
-        temperature: model.temperature,
-        maxTemperature: model.maxTemperature,
-        supportedMethods: model.supportedGenerationMethods || []
-      }));
-
-    return transformedModels;
+    try {
+      const data = await response.json();
+      console.log('Models response:', data);
+      return DEFAULT_MODELS;
+    } catch (error) {
+      console.warn('Error parsing models response:', error);
+      return DEFAULT_MODELS;
+    }
   } catch (error) {
-    console.error('Error fetching Google AI models:', error);
+    console.warn('Network error fetching models:', error);
     return DEFAULT_MODELS;
   }
 };
@@ -91,7 +77,7 @@ export const sendGoogleMessage = async (
 
   try {
     const baseUrl = customApiUrl || API_BASE;
-    const baseModelId = modelId.includes('models/') ? modelId.split('/')[1] : modelId;
+    console.log('Sending message to:', baseUrl);
 
     const formattedMessages = messages.map(msg => ({
       role: msg.role === 'assistant' ? 'model' : msg.role,
@@ -108,24 +94,38 @@ export const sendGoogleMessage = async (
       }
     };
 
-    const response = await fetch(`${baseUrl}/v1beta/models/${baseModelId}:generateContent`, {
+    console.log('Request headers:', {
+      'Content-Type': 'application/json',
+      'x-goog-api-key': 'REDACTED',
+      'x-model-id': modelId
+    });
+
+    const response = await fetch(`${baseUrl}/chat`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-goog-api-key': apiKey
+        'x-goog-api-key': apiKey,
+        'x-model-id': modelId
       },
       body: JSON.stringify(requestBody),
       signal
     });
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({ error: { message: response.statusText } }));
-      throw new Error(`Failed to generate content: ${errorData?.error?.message || response.statusText}`);
+      const errorText = await response.text();
+      console.error('Error response:', {
+        status: response.status,
+        statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries()),
+        body: errorText
+      });
+      throw new Error(`Failed to generate content: ${response.statusText}. ${errorText}`);
     }
 
     const data = await response.json();
-    const content = data.candidates?.[0]?.content;
+    console.log('Chat response:', data);
 
+    const content = data.candidates?.[0]?.content;
     if (!content) {
       throw new Error('No content in response');
     }
@@ -140,15 +140,11 @@ export const sendGoogleMessage = async (
       }
     };
   } catch (error) {
-    console.error('Google AI Studio Error:', error);
+    console.error('Google AI Studio Error:', {
+      error,
+      message: error.message,
+      stack: error.stack
+    });
     throw new APIError(`Failed to send message: ${error.message}`);
   }
 };
-
-export class GoogleClient {
-  constructor(private apiKey: string) {}
-
-  public async exampleMethod() {
-    console.log('Example method called');
-  }
-}
