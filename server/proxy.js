@@ -7,7 +7,11 @@ const PORT = process.env.PORT || 8080;
 
 // Configure CORS with specific origins
 const corsOptions = {
-  origin: ['http://localhost:8081', 'https://preview--chat-vortex.lovable.app'],
+  origin: [
+    'http://localhost:8081',
+    'https://preview--chat-vortex.lovable.app',
+    'https://preview-2ad03bd7--chat-vortex.lovable.app'
+  ],
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-goog-api-key'],
   credentials: true,
@@ -21,68 +25,56 @@ app.use(cors(corsOptions));
 // Handle preflight requests
 app.options('*', cors(corsOptions));
 
-// Common proxy configuration
-const createProxy = (pathPrefix, targetPath, extraConfig = {}) => {
-  return createProxyMiddleware({
-    target: 'https://gateway.ai.cloudflare.com',
-    changeOrigin: true,
-    secure: true,
-    pathRewrite: (path) => path.replace(pathPrefix, targetPath),
-    onProxyReq: (proxyReq, req, res) => {
-      // Copy headers
-      if (req.headers['x-goog-api-key']) {
-        proxyReq.setHeader('x-goog-api-key', req.headers['x-goog-api-key']);
-      }
+// Create proxy middleware
+const proxyMiddleware = createProxyMiddleware({
+  target: 'https://gateway.ai.cloudflare.com',
+  changeOrigin: true,
+  secure: true,
+  onProxyReq: (proxyReq, req, res) => {
+    // Copy API key header
+    if (req.headers['x-goog-api-key']) {
+      proxyReq.setHeader('x-goog-api-key', req.headers['x-goog-api-key']);
+    }
+    
+    // Remove credentials header
+    proxyReq.removeHeader('cookie');
+    
+    // Set content type
+    proxyReq.setHeader('Content-Type', 'application/json');
+    
+    console.log('Proxying request to:', proxyReq.path);
+  },
+  onProxyRes: (proxyRes, req, res) => {
+    const origin = req.headers.origin;
+    
+    // Remove existing CORS headers
+    delete proxyRes.headers['access-control-allow-origin'];
+    delete proxyRes.headers['access-control-allow-credentials'];
+    
+    // Set CORS headers if origin is allowed
+    if (origin && corsOptions.origin.includes(origin)) {
+      proxyRes.headers['Access-Control-Allow-Origin'] = origin;
+      proxyRes.headers['Access-Control-Allow-Credentials'] = 'true';
+      proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
+      proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, x-goog-api-key';
       
-      // Remove credentials header
-      proxyReq.removeHeader('cookie');
-      
-      // Set content type
-      proxyReq.setHeader('Content-Type', 'application/json');
-      
-      console.log(`Proxying ${pathPrefix} request to:`, proxyReq.path);
-      
-      // Apply any extra request handlers
-      extraConfig.onProxyReq?.(proxyReq, req, res);
-    },
-    onProxyRes: (proxyRes, req, res) => {
-      const origin = req.headers.origin;
-      
-      // Remove existing CORS headers
-      delete proxyRes.headers['access-control-allow-origin'];
-      delete proxyRes.headers['access-control-allow-credentials'];
-      delete proxyRes.headers['access-control-allow-methods'];
-      delete proxyRes.headers['access-control-allow-headers'];
-      
-      // Set CORS headers if origin is allowed
-      if (origin && corsOptions.origin.includes(origin)) {
-        proxyRes.headers['Access-Control-Allow-Origin'] = origin;
-        proxyRes.headers['Access-Control-Allow-Credentials'] = 'true';
-        proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
-        proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, x-goog-api-key';
-        
-        console.log(`Setting CORS headers for ${pathPrefix} origin:`, origin);
-      }
-      
-      console.log(`${pathPrefix} response headers:`, proxyRes.headers);
-      
-      // Apply any extra response handlers
-      extraConfig.onProxyRes?.(proxyRes, req, res);
-    },
-    ...extraConfig
-  });
-};
+      console.log('Setting CORS headers for origin:', origin);
+    }
+    
+    console.log('Response headers:', proxyRes.headers);
+  }
+});
 
-// Mount proxy middlewares
-app.use('/api/google', createProxy(
-  '/api/google',
-  '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/google-ai-studio'
-));
+// Mount proxy routes
+app.use('/api/google', (req, res, next) => {
+  req.url = req.url.replace('/api/google', '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/google-ai-studio');
+  proxyMiddleware(req, res, next);
+});
 
-app.use('/api/cloudflare', createProxy(
-  '/api/cloudflare',
-  '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/openai'
-));
+app.use('/api/cloudflare', (req, res, next) => {
+  req.url = req.url.replace('/api/cloudflare', '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/openai');
+  proxyMiddleware(req, res, next);
+});
 
 // Health check endpoint
 app.get('/health', (req, res) => {
