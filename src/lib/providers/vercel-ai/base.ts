@@ -20,7 +20,6 @@ export abstract class BaseVercelProvider {
         throw new Error(error.message || response.statusText);
       }
       
-      // Convert the response to a streaming response using Vercel's AIStream
       const stream = AIStream(response);
       return new StreamingTextResponse(stream);
     } catch (error) {
