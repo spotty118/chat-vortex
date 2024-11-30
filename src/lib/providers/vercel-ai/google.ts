@@ -3,8 +3,11 @@ import { BaseVercelProvider, ProviderStreamOptions } from './base';
 
 export class VercelGoogleProvider extends BaseVercelProvider {
   protected async generateStream({ apiKey, model, messages, signal }: ProviderStreamOptions) {
+    console.log('Generating stream for model:', model);
     const baseUrl = 'http://localhost:8080/api/google';
-    return fetch(`${baseUrl}/v1beta/models/${model}:generateContent`, {
+    const modelId = model.replace('models/', '');
+    
+    const response = await fetch(`${baseUrl}/v1beta/models/${modelId}/generateContent`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -24,13 +27,25 @@ export class VercelGoogleProvider extends BaseVercelProvider {
       }),
       signal,
     });
+
+    if (!response.ok) {
+      const error = await response.json().catch(() => ({}));
+      throw new Error(error.message || response.statusText);
+    }
+
+    return response;
   }
 
   async streamResponse(options: ProviderStreamOptions) {
-    const response = await this.generateStream(options);
-    const stream = GoogleGenerativeAIStream({
-      stream: response.body as unknown as AsyncIterable<any>
-    });
-    return new StreamingTextResponse(stream);
+    try {
+      const response = await this.generateStream(options);
+      const stream = GoogleGenerativeAIStream({
+        stream: response.body as unknown as AsyncIterable<any>
+      });
+      return new StreamingTextResponse(stream);
+    } catch (error) {
+      console.error('Error in streamResponse:', error);
+      throw error;
+    }
   }
 }

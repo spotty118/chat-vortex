@@ -27,9 +27,14 @@ const googleCloudflareProxy = createProxyMiddleware({
   changeOrigin: true,
   secure: true,
   pathRewrite: (path) => {
-    // Remove 'models/' from the path if present
-    return path.replace('/api/google', '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/google-ai-studio')
-              .replace('models/models/', 'models/');
+    console.log('Original path:', path);
+    // Clean up path by removing duplicate 'models' and handling generateContent endpoint
+    const cleanPath = path
+      .replace('/api/google', '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/google-ai-studio')
+      .replace('models/models/', 'models/')
+      .replace(':generateContent', '/generateContent');
+    console.log('Rewritten path:', cleanPath);
+    return cleanPath;
   },
   onProxyReq: function (proxyReq, req, res) {
     // Copy API key header
