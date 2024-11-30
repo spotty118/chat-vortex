@@ -1,4 +1,4 @@
-import { AnthropicStream } from 'ai';
+import { AnthropicStream, StreamingTextResponse } from 'ai';
 import { BaseVercelProvider, ProviderStreamOptions } from './base';
 
 export class VercelAnthropicProvider extends BaseVercelProvider {

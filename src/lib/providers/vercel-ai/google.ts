@@ -1,4 +1,4 @@
-import { GoogleGenerativeAIStream } from 'ai';
+import { GoogleGenerativeAIStream, StreamingTextResponse } from 'ai';
 import { BaseVercelProvider, ProviderStreamOptions } from './base';
 
 export class VercelGoogleProvider extends BaseVercelProvider {
@@ -28,7 +28,11 @@ export class VercelGoogleProvider extends BaseVercelProvider {
 
   async streamResponse(options: ProviderStreamOptions) {
     const response = await this.generateStream(options);
-    const stream = GoogleGenerativeAIStream(response);
+    // Convert Response to the expected format for GoogleGenerativeAIStream
+    const stream = GoogleGenerativeAIStream({
+      stream: response.body as unknown as AsyncIterable<any>,
+      async: true
+    });
     return new StreamingTextResponse(stream);
   }
 }

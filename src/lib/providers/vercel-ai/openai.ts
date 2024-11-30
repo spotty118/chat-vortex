@@ -1,4 +1,4 @@
-import { OpenAIStream } from 'ai';
+import { OpenAIStream, StreamingTextResponse } from 'ai';
 import { BaseVercelProvider, ProviderStreamOptions } from './base';
 
 export class VercelOpenAIProvider extends BaseVercelProvider {
