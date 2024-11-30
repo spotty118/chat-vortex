@@ -9,11 +9,12 @@ import { ModelSelector } from "@/components/ModelSelector";
 import { MessageList } from "@/components/MessageList";
 import { MessageInput } from "@/components/MessageInput";
 import { TokenUsageDisplay } from "@/components/TokenUsageDisplay";
-import { fetchModels, sendMessage, APIError } from "@/lib/api";
+import { fetchModels } from "@/lib/api";
 import { saveConversation, exportConversation } from "@/lib/conversation";
 import { MessageWithMetadata } from "@/lib/types/ai";
 import { Model } from "@/lib/types";
 import { useTools } from '@/lib/tools/setup';
+import { providers } from '@/lib/providers/vercel-ai';
 
 interface ChatProps {
   provider: Provider;
@@ -224,53 +225,71 @@ export const Chat = ({ provider, attachments }: ChatProps) => {
     };
     
     setMessages(prev => [...prev, userMessage]);
-    setInput(typeof userMessage.content === 'string' ? userMessage.content : (userMessage.content as any).text || '');
+    setInput("");
     setIsLoading(true);
 
     const newController = new AbortController();
     setController(newController);
 
     try {
-      console.log(`Sending message using model: ${selectedModel}`);
-      const response = await sendMessage(
-        provider, 
-        selectedModel, 
-        getContextMessages([...messages, userMessage]),
-        newController.signal
-      );
-      
-      const assistantMessage: MessageWithMetadata = {
-        id: nanoid(),
-        role: "assistant",
-        content: response.message,
-        timestamp: Date.now(),
-        metadata: {},
-        usage: response.usage
-      };
-
-      setMessages(prev => [...prev, assistantMessage]);
-      
-      if (response.usage) {
-        console.log("Token usage:", response.usage);
+      const apiKey = localStorage.getItem(`${provider.id}_api_key`);
+      if (!apiKey) {
+        throw new Error("API key not found");
       }
 
-      if (response.metadata?.toolCalls) {
-        for (const toolCall of response.metadata.toolCalls) {
-          await handleToolCall(toolCall);
-        }
+      const vercelProvider = providers[provider.id as keyof typeof providers];
+      if (!vercelProvider) {
+        throw new Error("Provider not supported");
       }
-    } catch (error) {
-      if (error instanceof APIError) {
-        console.error("Error sending message:", error);
-        toast({
-          title: "Error",
-          description: error.message,
-          variant: "destructive",
-        });
+
+      const response = await vercelProvider.streamResponse({
+        apiKey,
+        model: selectedModel,
+        messages: getContextMessages([...messages, userMessage]),
+        signal: newController.signal,
+      });
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let content = '';
+
+      if (!reader) {
+        throw new Error("No response stream available");
+      }
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
         
-        setMessages(prev => prev.slice(0, -1));
-        setInput(userMessage.content);
+        const chunk = decoder.decode(value);
+        content += chunk;
+
+        // Update the UI with the streamed content
+        setMessages(prev => {
+          const lastMessage = prev[prev.length - 1];
+          if (lastMessage.role === 'assistant') {
+            return [...prev.slice(0, -1), { ...lastMessage, content }];
+          }
+          return [...prev, {
+            id: nanoid(),
+            role: 'assistant',
+            content,
+            timestamp: Date.now(),
+            metadata: {}
+          }];
+        });
       }
+
+    } catch (error) {
+      console.error("Error sending message:", error);
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+      
+      setMessages(prev => prev.slice(0, -1));
+      setInput(userMessage.content);
     } finally {
       setIsLoading(false);
       setController(null);
