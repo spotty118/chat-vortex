@@ -21,6 +21,11 @@ app.use(cors(corsOptions));
 // Handle preflight requests
 app.options('*', cors(corsOptions));
 
+// Health check endpoint
+app.get('/health', (req, res) => {
+  res.status(200).json({ status: 'ok' });
+});
+
 // Proxy middleware configuration for Google Provider via Cloudflare
 const googleCloudflareProxy = createProxyMiddleware({
   target: 'https://gateway.ai.cloudflare.com',
@@ -30,17 +35,20 @@ const googleCloudflareProxy = createProxyMiddleware({
     console.log('Original path:', path);
     const cleanPath = path
       .replace('/api/google', '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/google-ai-studio')
-      .replace(/models\/+/g, 'models/') // Handle any number of consecutive 'models/'
+      .replace(/models\/+/g, 'models/')
       .replace(':generateContent', '/generateContent');
     console.log('Rewritten path:', cleanPath);
     return cleanPath;
   },
   onProxyReq: function (proxyReq, req, res) {
     console.log('Proxying request to:', proxyReq.path);
+    console.log('Request headers:', req.headers);
     
     // Copy API key header
     if (req.headers['x-goog-api-key']) {
       proxyReq.setHeader('x-goog-api-key', req.headers['x-goog-api-key']);
+    } else {
+      console.warn('No API key found in request headers');
     }
     
     // Remove credentials header to prevent CORS issues
@@ -50,6 +58,9 @@ const googleCloudflareProxy = createProxyMiddleware({
     proxyReq.setHeader('Content-Type', 'application/json');
   },
   onProxyRes: function (proxyRes, req, res) {
+    console.log('Received response from target');
+    console.log('Response status:', proxyRes.statusCode);
+    
     // Remove any existing CORS headers from the response
     delete proxyRes.headers['access-control-allow-origin'];
     delete proxyRes.headers['access-control-allow-credentials'];
@@ -71,18 +82,43 @@ const googleCloudflareProxy = createProxyMiddleware({
     proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, x-goog-api-key';
     
     console.log('Response headers:', proxyRes.headers);
+  },
+  onError: (err, req, res) => {
+    console.error('Proxy Error:', err);
+    res.status(500).json({
+      error: 'Proxy Error',
+      message: err.message,
+      code: err.code
+    });
   }
 });
 
 // Mount the proxy middleware
 app.use('/api/google', googleCloudflareProxy);
 
-// Error handling middleware
+// Global error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Proxy Error:', err);
-  res.status(500).json({ error: 'Proxy Error', message: err.message });
+  console.error('Server Error:', err);
+  res.status(500).json({
+    error: 'Server Error',
+    message: err.message,
+    code: err.code
+  });
 });
 
-app.listen(PORT, () => {
+// Start server with error handling
+const server = app.listen(PORT, () => {
   console.log(`Proxy server running on port ${PORT}`);
+}).on('error', (err) => {
+  console.error('Failed to start server:', err);
+  process.exit(1);
+});
+
+// Handle process termination
+process.on('SIGTERM', () => {
+  console.log('SIGTERM received, shutting down gracefully');
+  server.close(() => {
+    console.log('Server closed');
+    process.exit(0);
+  });
 });

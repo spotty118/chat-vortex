@@ -7,35 +7,41 @@ export class VercelGoogleProvider extends BaseVercelProvider {
     const baseUrl = 'http://localhost:8080/api/google';
     const modelId = model.split('/').pop(); // Get the last part of the model path
     
-    console.log('Making request to:', `${baseUrl}/v1beta/models/${modelId}/generateContent`);
+    const endpoint = `${baseUrl}/v1beta/models/${modelId}/generateContent`;
+    console.log('Making request to:', endpoint);
     
-    const response = await fetch(`${baseUrl}/v1beta/models/${modelId}/generateContent`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-goog-api-key': apiKey,
-      },
-      body: JSON.stringify({
-        contents: messages.map(msg => ({
-          role: msg.role === 'assistant' ? 'model' : msg.role,
-          parts: [{ text: msg.content.toString() }]
-        })),
-        generationConfig: {
-          temperature: 0.7,
-          topP: 0.95,
-          topK: 40,
-          maxOutputTokens: 8192,
-        }
-      }),
-      signal,
-    });
+    try {
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-goog-api-key': apiKey,
+        },
+        body: JSON.stringify({
+          contents: messages.map(msg => ({
+            role: msg.role === 'assistant' ? 'model' : msg.role,
+            parts: [{ text: msg.content.toString() }]
+          })),
+          generationConfig: {
+            temperature: 0.7,
+            topP: 0.95,
+            topK: 40,
+            maxOutputTokens: 8192,
+          }
+        }),
+        signal,
+      });
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({}));
-      throw new Error(error.message || response.statusText);
+      if (!response.ok) {
+        const error = await response.json().catch(() => ({}));
+        throw new Error(error.message || response.statusText);
+      }
+
+      return response;
+    } catch (error) {
+      console.error('Error in generateStream:', error);
+      throw error;
     }
-
-    return response;
   }
 
   async streamResponse(options: ProviderStreamOptions) {
