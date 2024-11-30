@@ -3,15 +3,11 @@ const cors = require('cors');
 const { createProxyMiddleware } = require('http-proxy-middleware');
 
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = 8080;
 
 // Configure CORS with specific origins
 const corsOptions = {
-  origin: [
-    'http://localhost:8081',
-    'https://preview--chat-vortex.lovable.app',
-    'https://preview-2ad03bd7--chat-vortex.lovable.app'
-  ],
+  origin: ['http://localhost:8081', 'https://preview--chat-vortex.lovable.app'],
   methods: ['GET', 'POST', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-goog-api-key'],
   credentials: true,
@@ -25,74 +21,59 @@ app.use(cors(corsOptions));
 // Handle preflight requests
 app.options('*', cors(corsOptions));
 
-// Create proxy middleware
-const proxyMiddleware = createProxyMiddleware({
+// Proxy middleware configuration for Google Provider via Cloudflare
+const googleCloudflareProxy = createProxyMiddleware({
   target: 'https://gateway.ai.cloudflare.com',
   changeOrigin: true,
   secure: true,
-  onProxyReq: (proxyReq, req, res) => {
+  pathRewrite: (path) => {
+    return path.replace('/api/google', '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/google-ai-studio');
+  },
+  onProxyReq: function (proxyReq, req, res) {
     // Copy API key header
     if (req.headers['x-goog-api-key']) {
       proxyReq.setHeader('x-goog-api-key', req.headers['x-goog-api-key']);
     }
     
-    // Remove credentials header
+    // Remove credentials header to prevent CORS issues
     proxyReq.removeHeader('cookie');
     
-    // Set content type
+    // Ensure content type is set
     proxyReq.setHeader('Content-Type', 'application/json');
     
     console.log('Proxying request to:', proxyReq.path);
   },
-  onProxyRes: (proxyRes, req, res) => {
-    const origin = req.headers.origin;
-    
-    // Remove existing CORS headers
+  onProxyRes: function (proxyRes, req, res) {
+    // Remove any existing CORS headers from the response
     delete proxyRes.headers['access-control-allow-origin'];
     delete proxyRes.headers['access-control-allow-credentials'];
+    delete proxyRes.headers['access-control-allow-methods'];
+    delete proxyRes.headers['access-control-allow-headers'];
+
+    // Get the origin from the request headers
+    const origin = req.headers.origin;
     
-    // Set CORS headers if origin is allowed
-    if (origin && corsOptions.origin.includes(origin)) {
+    // Set new CORS headers on the response
+    if (origin && (origin === 'http://localhost:8081' || origin === 'https://preview--chat-vortex.lovable.app')) {
       proxyRes.headers['Access-Control-Allow-Origin'] = origin;
       proxyRes.headers['Access-Control-Allow-Credentials'] = 'true';
       proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
       proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, x-goog-api-key';
-      
-      console.log('Setting CORS headers for origin:', origin);
     }
     
     console.log('Response headers:', proxyRes.headers);
   }
 });
 
-// Mount proxy routes
-app.use('/api/google', (req, res, next) => {
-  req.url = req.url.replace('/api/google', '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/google-ai-studio');
-  proxyMiddleware(req, res, next);
-});
-
-app.use('/api/cloudflare', (req, res, next) => {
-  req.url = req.url.replace('/api/cloudflare', '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/openai');
-  proxyMiddleware(req, res, next);
-});
-
-// Health check endpoint
-app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
-});
+// Mount the proxy middleware
+app.use('/api/google', googleCloudflareProxy);
 
 // Error handling middleware
 app.use((err, req, res, next) => {
   console.error('Proxy Error:', err);
-  res.status(500).json({ 
-    error: 'Proxy Error', 
-    message: err.message,
-    path: req.path
-  });
+  res.status(500).json({ error: 'Proxy Error', message: err.message });
 });
 
-// Start server
 app.listen(PORT, () => {
   console.log(`Proxy server running on port ${PORT}`);
-  console.log('Allowed origins:', corsOptions.origin);
 });
