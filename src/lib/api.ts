@@ -28,11 +28,16 @@ export const fetchModels = async (provider: Provider): Promise<any> => {
   try {
     switch (provider.id) {
       case "google":
-        const customApiUrl = localStorage.getItem("google_gateway_url");
-        return fetchGoogleModels(apiKey, customApiUrl);
+        const googleGatewayUrl = localStorage.getItem("google_gateway_url");
+        return fetchGoogleModels(apiKey, googleGatewayUrl);
       case "openrouter":
         return fetchOpenRouterModels(apiKey);
       case "openai":
+        const openaiGatewayUrl = localStorage.getItem("openai_gateway_url");
+        if (openaiGatewayUrl) {
+          console.log("Using Cloudflare gateway for OpenAI");
+          return fetchCloudflareModels(apiKey, openaiGatewayUrl);
+        }
         return fetchOpenAIModels(apiKey);
       case "anthropic":
         return fetchAnthropicModels(apiKey);
@@ -67,11 +72,16 @@ export const sendMessage = async (
   try {
     switch (provider.id) {
       case "google":
-        const customApiUrl = localStorage.getItem("google_gateway_url");
-        return sendGoogleMessage(apiKey, modelId, messages, signal, customApiUrl);
+        const googleGatewayUrl = localStorage.getItem("google_gateway_url");
+        return sendGoogleMessage(apiKey, modelId, messages, signal, googleGatewayUrl);
       case "openrouter":
         return sendOpenRouterMessage(apiKey, modelId, messages, signal);
       case "openai":
+        const openaiGatewayUrl = localStorage.getItem("openai_gateway_url");
+        if (openaiGatewayUrl) {
+          console.log("Routing OpenAI request through Cloudflare gateway");
+          return sendCloudflareMessage(apiKey, modelId, messages, signal, openaiGatewayUrl);
+        }
         return sendOpenAIMessage(apiKey, modelId, messages, signal);
       case "anthropic":
         return sendAnthropicMessage(apiKey, modelId, messages, signal);
