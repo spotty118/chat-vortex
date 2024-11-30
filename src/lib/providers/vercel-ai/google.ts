@@ -5,7 +5,9 @@ export class VercelGoogleProvider extends BaseVercelProvider {
   protected async generateStream({ apiKey, model, messages, signal }: ProviderStreamOptions) {
     console.log('Generating stream for model:', model);
     const baseUrl = 'http://localhost:8080/api/google';
-    const modelId = model.replace('models/', '');
+    const modelId = model.split('/').pop(); // Get the last part of the model path
+    
+    console.log('Making request to:', `${baseUrl}/v1beta/models/${modelId}/generateContent`);
     
     const response = await fetch(`${baseUrl}/v1beta/models/${modelId}/generateContent`, {
       method: 'POST',
