@@ -76,6 +76,11 @@ app.use('/api/cloudflare', (req, res, next) => {
   proxyMiddleware(req, res, next);
 });
 
+app.use('/api/anthropic', (req, res, next) => {
+  req.url = req.url.replace('/api/anthropic', '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/anthropic');
+  proxyMiddleware(req, res, next);
+});
+
 // Health check endpoint
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
