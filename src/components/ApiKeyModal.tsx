@@ -38,14 +38,13 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
   useEffect(() => {
     if (provider) {
       if (provider.id === 'cloudflare') {
-        // Set the direct Cloudflare gateway URL
         setGatewayUrl('https://gateway.ai.cloudflare.com/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/openai');
       } else if (provider.id === 'google') {
-        // Set the Google AI Studio gateway URL
         setGatewayUrl('https://gateway.ai.cloudflare.com/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/google-ai-studio');
       } else if (provider.id === 'openai') {
-        // Set the OpenAI gateway URL through Cloudflare
         setGatewayUrl('https://gateway.ai.cloudflare.com/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/openai');
+      } else if (provider.id === 'anthropic') {
+        setGatewayUrl('https://gateway.ai.cloudflare.com/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/anthropic');
       }
     }
   }, [provider]);
@@ -62,7 +61,9 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
       return;
     }
 
-    if ((provider?.id === 'cloudflare' || provider?.id === 'google' || provider?.id === 'openai') && !gatewayUrl.trim()) {
+    if ((provider?.id === 'cloudflare' || provider?.id === 'google' || 
+         provider?.id === 'openai' || provider?.id === 'anthropic') && 
+        !gatewayUrl.trim()) {
       toast({
         title: "Error",
         description: `Please enter your ${provider.id} AI Gateway URL`,
@@ -84,7 +85,8 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
 
     try {
       localStorage.setItem(`${provider.id}_api_key`, apiKey.trim());
-      if (provider.id === 'cloudflare' || provider.id === 'google' || provider.id === 'openai') {
+      if (provider.id === 'cloudflare' || provider.id === 'google' || 
+          provider.id === 'openai' || provider.id === 'anthropic') {
         localStorage.setItem(`${provider.id}_gateway_url`, gatewayUrl.trim());
       }
       console.log(`Saved API key for provider: ${provider.id}`);
@@ -153,7 +155,8 @@ export const ApiKeyModal = ({ provider, open, onClose }: {
               autoComplete="new-password"
             />
           </div>
-          {(provider.id === 'cloudflare' || provider.id === 'google' || provider.id === 'openai') && (
+          {(provider.id === 'cloudflare' || provider.id === 'google' || 
+            provider.id === 'openai' || provider.id === 'anthropic') && (
             <div className="space-y-2">
               <Label htmlFor="gatewayUrl">Gateway URL</Label>
               <Input
