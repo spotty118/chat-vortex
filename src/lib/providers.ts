@@ -11,6 +11,7 @@ export const providers: Provider[] = [
       {
         id: "gpt-4",
         name: "GPT-4",
+        provider: "openai",
         capabilities: ["chat", "code", "analysis"],
         tokenCost: 0.03,
         contextWindow: 8192,
@@ -21,6 +22,7 @@ export const providers: Provider[] = [
       {
         id: "gpt-3.5-turbo",
         name: "GPT-3.5 Turbo",
+        provider: "openai",
         capabilities: ["chat", "code"],
         tokenCost: 0.002,
         contextWindow: 4096,
@@ -53,6 +55,7 @@ export const providers: Provider[] = [
       {
         id: "gemini-pro",
         name: "Gemini Pro",
+        provider: "google",
         capabilities: ["chat", "code", "analysis"],
         tokenCost: 0.0001,
         contextWindow: 32768,
@@ -85,6 +88,7 @@ export const providers: Provider[] = [
       {
         id: "claude-3-opus",
         name: "Claude 3 Opus",
+        provider: "anthropic",
         capabilities: ["chat", "code", "analysis"],
         tokenCost: 0.015,
         contextWindow: 200000,
@@ -95,6 +99,7 @@ export const providers: Provider[] = [
       {
         id: "claude-3-sonnet",
         name: "Claude 3 Sonnet",
+        provider: "anthropic",
         capabilities: ["chat", "code"],
         tokenCost: 0.003,
         contextWindow: 200000,
@@ -127,6 +132,7 @@ export const providers: Provider[] = [
       {
         id: "mistral-large",
         name: "Mistral Large",
+        provider: "mistral",
         capabilities: ["chat", "code"],
         tokenCost: 0.008,
         contextWindow: 32768,
@@ -137,6 +143,7 @@ export const providers: Provider[] = [
       {
         id: "mistral-medium",
         name: "Mistral Medium",
+        provider: "mistral",
         capabilities: ["chat", "code"],
         tokenCost: 0.002,
         contextWindow: 32768,
@@ -169,6 +176,7 @@ export const providers: Provider[] = [
       {
         id: "openrouter/auto",
         name: "Auto",
+        provider: "openrouter",
         capabilities: ["chat", "code"],
         tokenCost: 0.005,
         contextWindow: 16384,
@@ -201,6 +209,7 @@ export const providers: Provider[] = [
       {
         id: "command",
         name: "Command",
+        provider: "cohere",
         capabilities: ["chat", "code"],
         tokenCost: 0.002,
         contextWindow: 4096,
