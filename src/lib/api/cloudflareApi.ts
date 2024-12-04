@@ -2,14 +2,17 @@ import { APIError } from '../errors';
 import type { ChatMessage } from '../types';
 
 // Update proxy base URL to match server port
-const PROXY_BASE = 'http://localhost:8080/api/cloudflare';
-const CLOUDFLARE_PATH = '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/openai';
+const PROXY_BASE = 'http://localhost:8080/api';
 
 export const fetchCloudflareModels = async (apiKey: string, customUrl?: string) => {
   console.log('Fetching Cloudflare models with proxy base:', PROXY_BASE);
   try {
-    const baseUrl = customUrl || `${PROXY_BASE}${CLOUDFLARE_PATH}`;
-    const response = await fetch(`${baseUrl}/models`, {
+    // Use the proxy endpoint instead of direct Cloudflare URL
+    const endpoint = customUrl?.includes('anthropic') 
+      ? '/anthropic/models'
+      : '/cloudflare/models';
+    
+    const response = await fetch(`${PROXY_BASE}${endpoint}`, {
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
@@ -35,15 +38,6 @@ export const fetchCloudflareModels = async (apiKey: string, customUrl?: string) 
         }];
       }
       
-      // For Google Vertex AI, return predefined models
-      if (customUrl && customUrl.includes('google-vertex')) {
-        return [{
-          id: 'chat-bison',
-          name: 'Google Vertex AI - Chat-Bison',
-          capabilities: ["chat", "code"]
-        }];
-      }
-      
       throw new APIError(`Failed to fetch models: ${response.statusText}`);
     }
 
@@ -64,15 +58,6 @@ export const fetchCloudflareModels = async (apiKey: string, customUrl?: string) 
       }];
     }
     
-    // If using Google Vertex AI through Cloudflare
-    if (customUrl && customUrl.includes('google-vertex')) {
-      return [{
-        id: 'chat-bison',
-        name: 'Google Vertex AI - Chat-Bison',
-        capabilities: ["chat", "code"]
-      }];
-    }
-    
     // For OpenAI models through Cloudflare
     const chatModels = data.data
       .filter((model: any) => model.id.includes('gpt'))
@@ -88,42 +73,9 @@ export const fetchCloudflareModels = async (apiKey: string, customUrl?: string) 
     return chatModels;
   } catch (error) {
     console.error('Error fetching Cloudflare models:', error);
-    
-    // Return appropriate fallback models based on the URL
-    if (customUrl && customUrl.includes('anthropic')) {
-      return [{
-        id: 'claude-3-opus-20240229',
-        name: 'Claude 3 Opus',
-        capabilities: ["chat", "code", "analysis"]
-      },
-      {
-        id: 'claude-3-sonnet-20240229',
-        name: 'Claude 3 Sonnet',
-        capabilities: ["chat", "code"]
-      }];
-    }
-    
-    if (customUrl && customUrl.includes('google-vertex')) {
-      return [{
-        id: 'chat-bison',
-        name: 'Google Vertex AI - Chat-Bison',
-        capabilities: ["chat", "code"]
-      }];
-    }
-    
-    // Default OpenAI models
-    return [
-      {
-        id: "gpt-4",
-        name: "GPT-4",
-        capabilities: ["chat", "code", "analysis"],
-      },
-      {
-        id: "gpt-3.5-turbo",
-        name: "GPT-3.5 Turbo",
-        capabilities: ["chat", "code"],
-      }
-    ];
+    throw error instanceof APIError 
+      ? error 
+      : new APIError('Failed to fetch models from Cloudflare Gateway');
   }
 };
 
@@ -134,7 +86,7 @@ export const sendCloudflareMessage = async (
   signal?: AbortSignal,
   customUrl?: string
 ) => {
-  console.log('Sending message to Cloudflare AI Gateway...', { 
+  console.log('Sending message through proxy...', { 
     modelId, 
     messageCount: messages.length,
     proxyBase: PROXY_BASE,
@@ -142,10 +94,12 @@ export const sendCloudflareMessage = async (
   });
   
   try {
-    const baseUrl = customUrl || `${PROXY_BASE}${CLOUDFLARE_PATH}`;
-    const endpoint = modelId.includes('claude') ? 'messages' : 'chat/completions';
+    // Use the proxy endpoint instead of direct Cloudflare URL
+    const endpoint = customUrl?.includes('anthropic') 
+      ? '/anthropic/messages'
+      : '/cloudflare/chat/completions';
     
-    const response = await fetch(`${baseUrl}/${endpoint}`, {
+    const response = await fetch(`${PROXY_BASE}${endpoint}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -180,7 +134,7 @@ export const sendCloudflareMessage = async (
     }
 
     const data = await response.json();
-    console.log('Cloudflare API Response:', JSON.stringify(data, null, 2));
+    console.log('Proxy Response:', JSON.stringify(data, null, 2));
 
     // Handle different response formats for different providers
     if (modelId.includes('claude')) {
@@ -209,9 +163,9 @@ export const sendCloudflareMessage = async (
       }
     };
   } catch (error) {
-    console.error('Error sending message via Cloudflare:', error);
+    console.error('Error sending message via proxy:', error);
     throw error instanceof APIError 
       ? error 
-      : new APIError('Failed to send message to Cloudflare Gateway. Please ensure CORS is enabled in your Workers settings.');
+      : new APIError('Failed to send message through proxy');
   }
 };
