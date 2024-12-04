@@ -77,7 +77,14 @@ app.use('/api/cloudflare', (req, res, next) => {
 });
 
 app.use('/api/anthropic', (req, res, next) => {
-  req.url = req.url.replace('/api/anthropic', '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/anthropic');
+  // Update the path to use the correct Anthropic endpoint
+  const newPath = req.url.replace('/api/anthropic', '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/anthropic');
+  console.log('Anthropic request:', {
+    originalUrl: req.url,
+    newPath: newPath,
+    method: req.method
+  });
+  req.url = newPath;
   proxyMiddleware(req, res, next);
 });
 
