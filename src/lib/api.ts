@@ -40,11 +40,6 @@ export const fetchModels = async (provider: Provider): Promise<any> => {
         }
         return fetchOpenAIModels(apiKey);
       case "anthropic":
-        const anthropicGatewayUrl = localStorage.getItem("anthropic_gateway_url");
-        if (anthropicGatewayUrl) {
-          console.log("Using Cloudflare gateway for Anthropic");
-          return fetchCloudflareModels(apiKey, anthropicGatewayUrl);
-        }
         return fetchAnthropicModels(apiKey);
       case "mistral":
         return fetchMistralModels(apiKey);
@@ -89,11 +84,6 @@ export const sendMessage = async (
         }
         return sendOpenAIMessage(apiKey, modelId, messages, signal);
       case "anthropic":
-        const anthropicGatewayUrl = localStorage.getItem("anthropic_gateway_url");
-        if (anthropicGatewayUrl) {
-          console.log("Routing Anthropic request through Cloudflare gateway");
-          return sendCloudflareMessage(apiKey, modelId, messages, signal, anthropicGatewayUrl);
-        }
         return sendAnthropicMessage(apiKey, modelId, messages, signal);
       case "mistral":
         return sendMistralMessage(apiKey, modelId, messages, signal);

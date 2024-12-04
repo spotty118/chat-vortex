@@ -25,38 +25,24 @@ app.use(cors(corsOptions));
 // Handle preflight requests
 app.options('*', cors(corsOptions));
 
-// Create proxy middleware with detailed logging and error handling
+// Create proxy middleware
 const proxyMiddleware = createProxyMiddleware({
   target: 'https://gateway.ai.cloudflare.com',
   changeOrigin: true,
   secure: true,
-  pathRewrite: {
-    '^/api/anthropic/models': '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/anthropic/models',
-    '^/api/anthropic/messages': '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/anthropic/messages',
-    '^/api/google': '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/google-ai-studio',
-    '^/api/cloudflare': '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/openai'
-  },
   onProxyReq: (proxyReq, req, res) => {
-    // Copy headers
+    // Copy API key header
     if (req.headers['x-goog-api-key']) {
       proxyReq.setHeader('x-goog-api-key', req.headers['x-goog-api-key']);
-    }
-    if (req.headers['authorization']) {
-      proxyReq.setHeader('authorization', req.headers['authorization']);
     }
     
     // Remove credentials header
     proxyReq.removeHeader('cookie');
     
-    // Always set JSON content type
+    // Set content type
     proxyReq.setHeader('Content-Type', 'application/json');
-    proxyReq.setHeader('Accept', 'application/json');
     
-    console.log('Proxying request:', {
-      method: proxyReq.method,
-      path: proxyReq.path,
-      headers: proxyReq.getHeaders()
-    });
+    console.log('Proxying request to:', proxyReq.path);
   },
   onProxyRes: (proxyRes, req, res) => {
     const origin = req.headers.origin;
@@ -64,8 +50,6 @@ const proxyMiddleware = createProxyMiddleware({
     // Remove existing CORS headers
     delete proxyRes.headers['access-control-allow-origin'];
     delete proxyRes.headers['access-control-allow-credentials'];
-    delete proxyRes.headers['access-control-allow-methods'];
-    delete proxyRes.headers['access-control-allow-headers'];
     
     // Set CORS headers if origin is allowed
     if (origin && corsOptions.origin.includes(origin)) {
@@ -73,56 +57,24 @@ const proxyMiddleware = createProxyMiddleware({
       proxyRes.headers['Access-Control-Allow-Credentials'] = 'true';
       proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
       proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, x-goog-api-key';
+      
+      console.log('Setting CORS headers for origin:', origin);
     }
-
-    // Force JSON content type and prevent HTML responses
-    proxyRes.headers['Content-Type'] = 'application/json';
     
-    // Handle HTML responses by converting them to JSON errors
-    let responseBody = '';
-    const originalWrite = res.write;
-    const originalEnd = res.end;
-
-    res.write = function (chunk) {
-      responseBody += chunk;
-      return originalWrite.apply(res, arguments);
-    };
-
-    res.end = function () {
-      if (responseBody.includes('<!DOCTYPE html>')) {
-        // If HTML is detected, replace it with a JSON error
-        res.setHeader('Content-Type', 'application/json');
-        const errorResponse = JSON.stringify({
-          error: 'API Error',
-          message: 'Invalid response from upstream server'
-        });
-        originalWrite.call(res, errorResponse);
-      }
-      originalEnd.apply(res, arguments);
-    };
-    
-    console.log('Proxy response:', {
-      statusCode: proxyRes.statusCode,
-      headers: proxyRes.headers,
-      url: req.url
-    });
-  },
-  onError: (err, req, res) => {
-    console.error('Proxy Error:', err);
-    res.writeHead(500, {
-      'Content-Type': 'application/json',
-      'Access-Control-Allow-Origin': req.headers.origin || '*',
-      'Access-Control-Allow-Credentials': 'true'
-    });
-    res.end(JSON.stringify({ 
-      error: 'Proxy Error',
-      message: err.message
-    }));
+    console.log('Response headers:', proxyRes.headers);
   }
 });
 
-// Mount proxy middleware for all API routes
-app.use('/api', proxyMiddleware);
+// Mount proxy routes
+app.use('/api/google', (req, res, next) => {
+  req.url = req.url.replace('/api/google', '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/google-ai-studio');
+  proxyMiddleware(req, res, next);
+});
+
+app.use('/api/cloudflare', (req, res, next) => {
+  req.url = req.url.replace('/api/cloudflare', '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/openai');
+  proxyMiddleware(req, res, next);
+});
 
 // Health check endpoint
 app.get('/health', (req, res) => {
@@ -131,10 +83,11 @@ app.get('/health', (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Server Error:', err);
+  console.error('Proxy Error:', err);
   res.status(500).json({ 
-    error: 'Server Error',
-    message: err.message
+    error: 'Proxy Error', 
+    message: err.message,
+    path: req.path
   });
 });
 
