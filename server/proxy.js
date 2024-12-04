@@ -25,7 +25,7 @@ app.use(cors(corsOptions));
 // Handle preflight requests
 app.options('*', cors(corsOptions));
 
-// Create proxy middleware with detailed logging
+// Create proxy middleware with detailed logging and error handling
 const proxyMiddleware = createProxyMiddleware({
   target: 'https://gateway.ai.cloudflare.com',
   changeOrigin: true,
@@ -48,8 +48,10 @@ const proxyMiddleware = createProxyMiddleware({
     // Remove credentials header
     proxyReq.removeHeader('cookie');
     
-    // Set content type
-    proxyReq.setHeader('Content-Type', 'application/json');
+    // Set content type for non-GET requests
+    if (req.method !== 'GET') {
+      proxyReq.setHeader('Content-Type', 'application/json');
+    }
     
     console.log('Proxying request:', {
       method: proxyReq.method,
@@ -72,15 +74,28 @@ const proxyMiddleware = createProxyMiddleware({
       proxyRes.headers['Access-Control-Allow-Credentials'] = 'true';
       proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
       proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, x-goog-api-key';
-      
-      console.log('Set CORS headers for origin:', origin);
     }
+
+    // Ensure JSON content type for API responses
+    proxyRes.headers['Content-Type'] = 'application/json';
     
     console.log('Proxy response:', {
       statusCode: proxyRes.statusCode,
       headers: proxyRes.headers,
       url: req.url
     });
+  },
+  onError: (err, req, res) => {
+    console.error('Proxy Error:', err);
+    res.writeHead(500, {
+      'Content-Type': 'application/json',
+      'Access-Control-Allow-Origin': req.headers.origin || '*',
+      'Access-Control-Allow-Credentials': 'true'
+    });
+    res.end(JSON.stringify({ 
+      error: 'Proxy Error',
+      message: err.message
+    }));
   }
 });
 
@@ -94,11 +109,10 @@ app.get('/health', (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Proxy Error:', err);
+  console.error('Server Error:', err);
   res.status(500).json({ 
-    error: 'Proxy Error', 
-    message: err.message,
-    path: req.path
+    error: 'Server Error',
+    message: err.message
   });
 });
 
