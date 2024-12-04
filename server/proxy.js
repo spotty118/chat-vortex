@@ -48,10 +48,9 @@ const proxyMiddleware = createProxyMiddleware({
     // Remove credentials header
     proxyReq.removeHeader('cookie');
     
-    // Set content type for non-GET requests
-    if (req.method !== 'GET') {
-      proxyReq.setHeader('Content-Type', 'application/json');
-    }
+    // Always set JSON content type
+    proxyReq.setHeader('Content-Type', 'application/json');
+    proxyReq.setHeader('Accept', 'application/json');
     
     console.log('Proxying request:', {
       method: proxyReq.method,
@@ -76,8 +75,31 @@ const proxyMiddleware = createProxyMiddleware({
       proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, x-goog-api-key';
     }
 
-    // Ensure JSON content type for API responses
+    // Force JSON content type and prevent HTML responses
     proxyRes.headers['Content-Type'] = 'application/json';
+    
+    // Handle HTML responses by converting them to JSON errors
+    let responseBody = '';
+    const originalWrite = res.write;
+    const originalEnd = res.end;
+
+    res.write = function (chunk) {
+      responseBody += chunk;
+      return originalWrite.apply(res, arguments);
+    };
+
+    res.end = function () {
+      if (responseBody.includes('<!DOCTYPE html>')) {
+        // If HTML is detected, replace it with a JSON error
+        res.setHeader('Content-Type', 'application/json');
+        const errorResponse = JSON.stringify({
+          error: 'API Error',
+          message: 'Invalid response from upstream server'
+        });
+        originalWrite.call(res, errorResponse);
+      }
+      originalEnd.apply(res, arguments);
+    };
     
     console.log('Proxy response:', {
       statusCode: proxyRes.statusCode,
