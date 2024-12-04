@@ -1,8 +1,12 @@
 import { APIError } from '../errors';
 import type { ChatMessage } from '../types';
 
-// Update proxy base URL to match server port
-const PROXY_BASE = 'http://localhost:8080/api';
+// Dynamically determine proxy base URL based on environment
+const PROXY_BASE = typeof window !== 'undefined' 
+  ? `${window.location.protocol}//${window.location.host}/api`
+  : 'http://localhost:8080/api';
+
+console.log('Using proxy base URL:', PROXY_BASE);
 
 export const fetchCloudflareModels = async (apiKey: string, customUrl?: string) => {
   console.log('Fetching Cloudflare models with proxy base:', PROXY_BASE);
