@@ -25,15 +25,24 @@ app.use(cors(corsOptions));
 // Handle preflight requests
 app.options('*', cors(corsOptions));
 
-// Create proxy middleware
+// Create proxy middleware with detailed logging
 const proxyMiddleware = createProxyMiddleware({
   target: 'https://gateway.ai.cloudflare.com',
   changeOrigin: true,
   secure: true,
+  pathRewrite: {
+    '^/api/anthropic/models': '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/anthropic/models',
+    '^/api/anthropic/messages': '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/anthropic/messages',
+    '^/api/google': '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/google-ai-studio',
+    '^/api/cloudflare': '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/openai'
+  },
   onProxyReq: (proxyReq, req, res) => {
-    // Copy API key header
+    // Copy headers
     if (req.headers['x-goog-api-key']) {
       proxyReq.setHeader('x-goog-api-key', req.headers['x-goog-api-key']);
+    }
+    if (req.headers['authorization']) {
+      proxyReq.setHeader('authorization', req.headers['authorization']);
     }
     
     // Remove credentials header
@@ -42,12 +51,16 @@ const proxyMiddleware = createProxyMiddleware({
     // Set content type
     proxyReq.setHeader('Content-Type', 'application/json');
     
-    console.log('Proxying request to:', proxyReq.path);
+    console.log('Proxying request:', {
+      method: proxyReq.method,
+      path: proxyReq.path,
+      headers: proxyReq.getHeaders()
+    });
   },
   onProxyRes: (proxyRes, req, res) => {
     const origin = req.headers.origin;
     
-    // Remove existing CORS headers from the proxied response
+    // Remove existing CORS headers
     delete proxyRes.headers['access-control-allow-origin'];
     delete proxyRes.headers['access-control-allow-credentials'];
     delete proxyRes.headers['access-control-allow-methods'];
@@ -60,42 +73,19 @@ const proxyMiddleware = createProxyMiddleware({
       proxyRes.headers['Access-Control-Allow-Methods'] = 'GET, POST, OPTIONS';
       proxyRes.headers['Access-Control-Allow-Headers'] = 'Content-Type, Authorization, x-goog-api-key';
       
-      console.log('Setting CORS headers for origin:', origin);
+      console.log('Set CORS headers for origin:', origin);
     }
     
-    console.log('Response headers:', proxyRes.headers);
+    console.log('Proxy response:', {
+      statusCode: proxyRes.statusCode,
+      headers: proxyRes.headers,
+      url: req.url
+    });
   }
 });
 
-// Mount proxy routes
-app.use('/api/google', (req, res, next) => {
-  req.url = req.url.replace('/api/google', '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/google-ai-studio');
-  proxyMiddleware(req, res, next);
-});
-
-app.use('/api/cloudflare', (req, res, next) => {
-  req.url = req.url.replace('/api/cloudflare', '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/openai');
-  proxyMiddleware(req, res, next);
-});
-
-app.use('/api/anthropic', (req, res, next) => {
-  // Update the path to use the correct Anthropic endpoint
-  const newPath = req.url.replace('/api/anthropic', '/v1/fe45775498a97cb07c10d3f0d79cc2f0/big/anthropic');
-  console.log('Anthropic request:', {
-    originalUrl: req.url,
-    newPath: newPath,
-    method: req.method,
-    headers: req.headers
-  });
-  req.url = newPath;
-  
-  // Ensure Authorization header is properly set
-  if (req.headers['authorization']) {
-    console.log('Authorization header present');
-  }
-  
-  proxyMiddleware(req, res, next);
-});
+// Mount proxy middleware for all API routes
+app.use('/api', proxyMiddleware);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
