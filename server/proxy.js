@@ -47,9 +47,11 @@ const proxyMiddleware = createProxyMiddleware({
   onProxyRes: (proxyRes, req, res) => {
     const origin = req.headers.origin;
     
-    // Remove existing CORS headers
+    // Remove existing CORS headers from the proxied response
     delete proxyRes.headers['access-control-allow-origin'];
     delete proxyRes.headers['access-control-allow-credentials'];
+    delete proxyRes.headers['access-control-allow-methods'];
+    delete proxyRes.headers['access-control-allow-headers'];
     
     // Set CORS headers if origin is allowed
     if (origin && corsOptions.origin.includes(origin)) {
@@ -82,9 +84,16 @@ app.use('/api/anthropic', (req, res, next) => {
   console.log('Anthropic request:', {
     originalUrl: req.url,
     newPath: newPath,
-    method: req.method
+    method: req.method,
+    headers: req.headers
   });
   req.url = newPath;
+  
+  // Ensure Authorization header is properly set
+  if (req.headers['authorization']) {
+    console.log('Authorization header present');
+  }
+  
   proxyMiddleware(req, res, next);
 });
 
