@@ -14,6 +14,7 @@ import { saveConversation, exportConversation } from "@/lib/conversation";
 import { MessageWithMetadata } from "@/lib/types/ai";
 import { Model } from "@/lib/types";
 import { useTools } from '@/lib/tools/setup';
+import { enhanceMessageWithChainOfThought, parseChainOfThought } from '@/lib/chainOfThought';
 
 interface ChatProps {
   provider: Provider;
@@ -223,8 +224,11 @@ export const Chat = ({ provider, attachments }: ChatProps) => {
       metadata: {}
     };
     
+    // Enhance the message with chain of thought prompt
+    const enhancedMessage = enhanceMessageWithChainOfThought(userMessage);
+    
     setMessages(prev => [...prev, userMessage]);
-    setInput(typeof userMessage.content === 'string' ? userMessage.content : (userMessage.content as any).text || '');
+    setInput("");
     setIsLoading(true);
 
     const newController = new AbortController();
@@ -235,16 +239,22 @@ export const Chat = ({ provider, attachments }: ChatProps) => {
       const response = await sendMessage(
         provider, 
         selectedModel, 
-        getContextMessages([...messages, userMessage]),
+        getContextMessages([...messages, enhancedMessage]),
         newController.signal
       );
+      
+      // Parse the chain of thought from the response
+      const thoughtChain = parseChainOfThought(response.message);
       
       const assistantMessage: MessageWithMetadata = {
         id: nanoid(),
         role: "assistant",
-        content: response.message,
+        content: thoughtChain.finalAnswer,
         timestamp: Date.now(),
-        metadata: {},
+        metadata: {
+          ...response.metadata,
+          thoughtSteps: thoughtChain.steps
+        },
         usage: response.usage
       };
 
