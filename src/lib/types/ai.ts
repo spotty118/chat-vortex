@@ -27,23 +27,29 @@ export interface TokenUsage {
   total_tokens: number;
 }
 
+// Import ThoughtStep type
+import { ThoughtStep } from '../chainOfThought';
+
+export interface MessageMetadata {
+  toolCalls?: Array<{
+    name: string;
+    arguments: any;
+  }>;
+  model?: string;
+  provider?: string;
+  tokens?: number;
+  processingTime?: number;
+  error?: boolean;
+  sources?: Array<{
+    title: string;
+    source: string;
+    score: number;
+  }>;
+  thoughtSteps?: ThoughtStep[]; // Add thoughtSteps to metadata
+}
+
 export interface MessageWithMetadata extends ChatMessage {
-  metadata?: {
-    toolCalls?: Array<{
-      name: string;
-      arguments: any;
-    }>;
-    model?: string;
-    provider?: string;
-    tokens?: number;
-    processingTime?: number;
-    error?: boolean;
-    sources?: Array<{
-      title: string;
-      source: string;
-      score: number;
-    }>;
-  };
+  metadata?: MessageMetadata;
   usage?: TokenUsage;
 }
 
@@ -54,22 +60,7 @@ export interface ChatMessage {
   timestamp: number;
   name?: string;
   tokens?: number;
-  metadata?: {
-    toolCalls?: Array<{
-      name: string;
-      arguments: any;
-    }>;
-    model?: string;
-    provider?: string;
-    tokens?: number;
-    processingTime?: number;
-    error?: boolean;
-    sources?: Array<{
-      title: string;
-      source: string;
-      score: number;
-    }>;
-  };
+  metadata?: MessageMetadata;
   streaming?: boolean;
   chunks?: StreamChunk[];
   error?: Error | null;

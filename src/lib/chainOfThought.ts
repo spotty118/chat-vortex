@@ -1,5 +1,3 @@
-import { ChatMessage } from './types/ai';
-
 export interface ThoughtStep {
   type: 'thought' | 'action' | 'observation' | 'conclusion';
   content: string;
