@@ -1,3 +1,5 @@
+import { MessageWithMetadata } from './types/ai';
+
 export interface ThoughtStep {
   type: 'thought' | 'action' | 'observation' | 'conclusion';
   content: string;
@@ -61,7 +63,7 @@ export const parseChainOfThought = (response: string): ChainOfThoughtResponse =>
   };
 };
 
-export const enhanceMessageWithChainOfThought = (message: ChatMessage): ChatMessage => {
+export const enhanceMessageWithChainOfThought = (message: MessageWithMetadata): MessageWithMetadata => {
   if (message.role === 'user') {
     return {
       ...message,
