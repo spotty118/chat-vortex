@@ -4,9 +4,14 @@ import { defineConfig, type ViteDevServer } from 'vite';
 import { nodePolyfills } from 'vite-plugin-node-polyfills';
 import { optimizeCssModules } from 'vite-plugin-optimize-css-modules';
 import tsconfigPaths from 'vite-tsconfig-paths';
+import { componentTagger } from "lovable-tagger";
 
 export default defineConfig((config) => {
   return {
+    server: {
+      host: "::",
+      port: 8080,
+    },
     build: {
       target: 'esnext',
     },
@@ -26,7 +31,8 @@ export default defineConfig((config) => {
       tsconfigPaths(),
       chrome129IssuePlugin(),
       config.mode === 'production' && optimizeCssModules({ apply: 'build' }),
-    ],
+      config.mode === 'development' && componentTagger(),
+    ].filter(Boolean),
     envPrefix: ["VITE_", "OPENAI_LIKE_API_", "OLLAMA_API_BASE_URL", "LMSTUDIO_API_BASE_URL","TOGETHER_API_BASE_URL"],
     css: {
       preprocessorOptions: {
